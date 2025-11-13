@@ -20,6 +20,7 @@ const Index = () => {
     { id: '5', coordinates: [11.5950, 48.1290], available: true },
     { id: '6', coordinates: [11.5800, 48.1420], available: false },
     { id: '7', coordinates: [11.5720, 48.1310], available: true },
+    { id: '8', coordinates: [11.5800, 48.1550], available: true }, // Hohenzollernstr. 48
   ]);
 
   const availableSpots = parkingSpots.filter(spot => spot.available).length;
