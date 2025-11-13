@@ -70,7 +70,10 @@ const Index = () => {
       {/* Map */}
       <div className="absolute inset-0 pt-28 pb-64">
         <div className="h-full px-6">
-          <Map parkingSpots={parkingSpots} />
+          <Map 
+            parkingSpots={parkingSpots} 
+            currentLocation={[11.5800, 48.1550]} 
+          />
         </div>
       </div>
 

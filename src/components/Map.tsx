@@ -11,12 +11,14 @@ interface ParkingSpot {
 interface MapProps {
   onMapReady?: (map: mapboxgl.Map) => void;
   parkingSpots: ParkingSpot[];
+  currentLocation?: [number, number];
 }
 
-const Map = ({ onMapReady, parkingSpots }: MapProps) => {
+const Map = ({ onMapReady, parkingSpots, currentLocation }: MapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<{ [key: string]: mapboxgl.Marker }>({});
+  const currentLocationMarker = useRef<mapboxgl.Marker | null>(null);
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -46,11 +48,25 @@ const Map = ({ onMapReady, parkingSpots }: MapProps) => {
       }
     });
 
+    // Add current location marker if provided
+    if (currentLocation) {
+      const el = document.createElement('div');
+      el.className = 'current-location-marker';
+      el.innerHTML = `
+        <div class="pulse-ring"></div>
+        <div class="location-dot"></div>
+      `;
+      
+      currentLocationMarker.current = new mapboxgl.Marker(el)
+        .setLngLat(currentLocation)
+        .addTo(map.current);
+    }
+
     // Cleanup
     return () => {
       map.current?.remove();
     };
-  }, [onMapReady]);
+  }, [onMapReady, currentLocation]);
 
   // Update markers when parking spots change
   useEffect(() => {
@@ -89,6 +105,52 @@ const Map = ({ onMapReady, parkingSpots }: MapProps) => {
 
   return (
     <div className="relative w-full h-full">
+      <style>{`
+        .current-location-marker {
+          width: 24px;
+          height: 24px;
+          position: relative;
+        }
+        
+        .location-dot {
+          width: 16px;
+          height: 16px;
+          background: hsl(var(--success));
+          border: 3px solid white;
+          border-radius: 50%;
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          z-index: 2;
+        }
+        
+        .pulse-ring {
+          width: 40px;
+          height: 40px;
+          border: 3px solid hsl(var(--success));
+          border-radius: 50%;
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          animation: pulse 2s ease-out infinite;
+          opacity: 0;
+          z-index: 1;
+        }
+        
+        @keyframes pulse {
+          0% {
+            transform: translate(-50%, -50%) scale(0.5);
+            opacity: 1;
+          }
+          100% {
+            transform: translate(-50%, -50%) scale(1.5);
+            opacity: 0;
+          }
+        }
+      `}</style>
       <div ref={mapContainer} className="absolute inset-0 rounded-3xl overflow-hidden" />
     </div>
   );
