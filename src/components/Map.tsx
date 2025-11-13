@@ -66,13 +66,17 @@ const Map = ({ onMapReady, parkingSpots }: MapProps) => {
 
       const el = document.createElement('div');
       el.className = 'parking-marker';
-      el.style.width = '32px';
-      el.style.height = '32px';
-      el.style.borderRadius = '50%';
-      el.style.backgroundColor = spot.available ? 'hsl(var(--ios-blue))' : 'hsl(var(--muted))';
-      el.style.border = '3px solid white';
-      el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+      el.innerHTML = `
+        <svg width="32" height="40" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 20 12 20s12-11 12-20c0-6.627-5.373-12-12-12z" 
+                fill="${spot.available ? 'hsl(211, 100%, 50%)' : 'hsl(0, 0%, 70%)'}" 
+                stroke="white" 
+                stroke-width="2"/>
+          <circle cx="12" cy="12" r="4" fill="white"/>
+        </svg>
+      `;
       el.style.cursor = 'pointer';
+      el.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))';
       el.style.transition = 'all 0.3s ease';
 
       const marker = new mapboxgl.Marker(el)
