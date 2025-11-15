@@ -3,25 +3,36 @@ import Map from '@/components/Map';
 import ParkingButton from '@/components/ParkingButton';
 import StatsCard from '@/components/StatsCard';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { formatDistanceToNow } from 'date-fns';
 
 interface ParkingSpot {
   id: string;
   coordinates: [number, number];
   available: boolean;
+  availableSince?: Date;
 }
 
 const Index = () => {
   const { toast } = useToast();
   const [parkingSpots, setParkingSpots] = useState<ParkingSpot[]>([
-    { id: '1', coordinates: [11.5820, 48.1351], available: true },
-    { id: '2', coordinates: [11.5750, 48.1380], available: true },
+    { id: '1', coordinates: [11.5820, 48.1351], available: true, availableSince: new Date(Date.now() - 15 * 60000) },
+    { id: '2', coordinates: [11.5750, 48.1380], available: true, availableSince: new Date(Date.now() - 45 * 60000) },
     { id: '3', coordinates: [11.5890, 48.1320], available: false },
-    { id: '4', coordinates: [11.5680, 48.1400], available: true },
-    { id: '5', coordinates: [11.5950, 48.1290], available: true },
+    { id: '4', coordinates: [11.5680, 48.1400], available: true, availableSince: new Date(Date.now() - 5 * 60000) },
+    { id: '5', coordinates: [11.5950, 48.1290], available: true, availableSince: new Date(Date.now() - 120 * 60000) },
     { id: '6', coordinates: [11.5800, 48.1420], available: false },
-    { id: '7', coordinates: [11.5720, 48.1310], available: true },
-    { id: '8', coordinates: [11.5800, 48.1550], available: true }, // Hohenzollernstr. 48
+    { id: '7', coordinates: [11.5720, 48.1310], available: true, availableSince: new Date(Date.now() - 30 * 60000) },
+    { id: '8', coordinates: [11.5800, 48.1550], available: true, availableSince: new Date(Date.now() - 10 * 60000) }, // Hohenzollernstr. 48
   ]);
+  const [selectedSpot, setSelectedSpot] = useState<ParkingSpot | null>(null);
 
   const availableSpots = parkingSpots.filter(spot => spot.available).length;
 
@@ -46,7 +57,7 @@ const Index = () => {
       if (takenSpot) {
         setParkingSpots(spots =>
           spots.map(spot =>
-            spot.id === takenSpot.id ? { ...spot, available: true } : spot
+            spot.id === takenSpot.id ? { ...spot, available: true, availableSince: new Date() } : spot
           )
         );
         toast({
@@ -54,6 +65,28 @@ const Index = () => {
           description: "Your spot is now available for others.",
         });
       }
+    }
+  };
+
+  const handleSpotClick = (spotId: string) => {
+    const spot = parkingSpots.find(s => s.id === spotId);
+    if (spot && spot.available) {
+      setSelectedSpot(spot);
+    }
+  };
+
+  const handleTakeSpot = () => {
+    if (selectedSpot) {
+      setParkingSpots(spots =>
+        spots.map(spot =>
+          spot.id === selectedSpot.id ? { ...spot, available: false, availableSince: undefined } : spot
+        )
+      );
+      toast({
+        title: "Spot Reserved!",
+        description: "This parking spot is now yours.",
+      });
+      setSelectedSpot(null);
     }
   };
 
@@ -72,10 +105,29 @@ const Index = () => {
         <div className="h-full px-6">
           <Map 
             parkingSpots={parkingSpots} 
-            currentLocation={[11.5800, 48.1550]} 
+            currentLocation={[11.5800, 48.1550]}
+            onSpotClick={handleSpotClick}
           />
         </div>
       </div>
+
+      {/* Spot Details Dialog */}
+      <Dialog open={!!selectedSpot} onOpenChange={(open) => !open && setSelectedSpot(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Parking Spot Available</DialogTitle>
+            <DialogDescription>
+              This spot has been available for{' '}
+              {selectedSpot?.availableSince && formatDistanceToNow(selectedSpot.availableSince)}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-center pt-4">
+            <Button onClick={handleTakeSpot} size="lg" className="w-full">
+              Take This Spot
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Bottom Card */}
       <div className="absolute bottom-0 left-0 right-0 z-20">

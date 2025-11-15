@@ -12,9 +12,10 @@ interface MapProps {
   onMapReady?: (map: mapboxgl.Map) => void;
   parkingSpots: ParkingSpot[];
   currentLocation?: [number, number];
+  onSpotClick?: (spotId: string) => void;
 }
 
-const Map = ({ onMapReady, parkingSpots, currentLocation }: MapProps) => {
+const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick }: MapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<{ [key: string]: mapboxgl.Marker }>({});
@@ -94,6 +95,13 @@ const Map = ({ onMapReady, parkingSpots, currentLocation }: MapProps) => {
       el.style.cursor = 'pointer';
       el.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))';
       el.style.transition = 'all 0.3s ease';
+
+      // Add click handler for available spots
+      if (spot.available && onSpotClick) {
+        el.addEventListener('click', () => {
+          onSpotClick(spot.id);
+        });
+      }
 
       const marker = new mapboxgl.Marker(el)
         .setLngLat(spot.coordinates)
