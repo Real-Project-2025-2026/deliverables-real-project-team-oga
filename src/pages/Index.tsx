@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDistanceToNow, differenceInMinutes } from 'date-fns';
 import { calculateDistance } from '@/lib/utils';
-import { Clock } from 'lucide-react';
+import { Clock, Locate } from 'lucide-react';
 
 interface ParkingSpot {
   id: string;
@@ -49,6 +49,7 @@ const Index = () => {
   const [showTimerDialog, setShowTimerDialog] = useState(false);
   const [parkingDuration, setParkingDuration] = useState<string>('60');
   const [timeRemaining, setTimeRemaining] = useState<string>('');
+  const [mapInstance, setMapInstance] = useState<any>(null);
 
   const availableSpots = parkingSpots.filter(spot => spot.available).length;
 
@@ -220,6 +221,20 @@ const Index = () => {
     }
   };
 
+  const handleRecenter = () => {
+    if (mapInstance && currentLocation) {
+      mapInstance.flyTo({
+        center: currentLocation,
+        zoom: 15,
+        duration: 1000,
+      });
+      toast({
+        title: "Map Recentered",
+        description: "Centered on your current location.",
+      });
+    }
+  };
+
   return (
     <div className="h-screen w-full bg-background overflow-hidden">
       {/* Header */}
@@ -232,12 +247,23 @@ const Index = () => {
 
       {/* Map */}
       <div className="absolute inset-0 pt-28 pb-64">
-        <div className="h-full px-6">
+        <div className="h-full px-6 relative">
           <Map 
             parkingSpots={parkingSpots} 
             currentLocation={currentLocation}
             onSpotClick={handleSpotClick}
+            onMapReady={setMapInstance}
           />
+          
+          {/* Recenter Button */}
+          <Button
+            onClick={handleRecenter}
+            size="icon"
+            className="absolute bottom-4 right-4 z-10 h-12 w-12 rounded-full shadow-lg"
+            aria-label="Recenter map on my location"
+          >
+            <Locate className="h-5 w-5" />
+          </Button>
         </div>
       </div>
 
