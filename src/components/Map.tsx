@@ -54,20 +54,6 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
       }
     });
 
-    // Add current location marker if provided
-    if (currentLocation) {
-      const el = document.createElement('div');
-      el.className = 'current-location-marker';
-      el.innerHTML = `
-        <div class="pulse-ring"></div>
-        <div class="location-dot"></div>
-      `;
-      
-      currentLocationMarker.current = new mapboxgl.Marker(el)
-        .setLngLat(currentLocation)
-        .addTo(map.current);
-    }
-
     // Add draggable manual pin on map move
     map.current.on('movestart', () => {
       if (map.current && !manualPinMarker.current) {
@@ -107,7 +93,7 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
     return () => {
       map.current?.remove();
     };
-  }, [onMapReady, currentLocation, onManualPinMove]);
+  }, [onMapReady]);
 
   // Update manual pin location when prop changes
   useEffect(() => {
@@ -118,6 +104,25 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
       manualPinMarker.current = null;
     }
   }, [manualPinLocation]);
+
+  // Update current location marker when location changes
+  useEffect(() => {
+    if (!map.current || !isMapLoaded || !currentLocation) return;
+
+    if (!currentLocationMarker.current) {
+      const el = document.createElement('div');
+      el.className = 'current-location-marker';
+      el.innerHTML = `
+        <div class="pulse-ring"></div>
+        <div class="location-dot"></div>
+      `;
+      currentLocationMarker.current = new mapboxgl.Marker(el)
+        .setLngLat(currentLocation)
+        .addTo(map.current);
+    } else {
+      currentLocationMarker.current.setLngLat(currentLocation);
+    }
+  }, [currentLocation, isMapLoaded]);
 
   // Update markers when parking spots change
   useEffect(() => {
