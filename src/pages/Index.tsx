@@ -33,7 +33,7 @@ interface UserParking {
 
 const Index = () => {
   const { toast } = useToast();
-  const currentLocation: [number, number] = [11.5800, 48.1550];
+  const [currentLocation, setCurrentLocation] = useState<[number, number]>([11.5800, 48.1550]); // Default to Munich
   const [parkingSpots, setParkingSpots] = useState<ParkingSpot[]>([
     { id: '1', coordinates: [11.5820, 48.1351], available: true, availableSince: new Date(Date.now() - 15 * 60000) },
     { id: '2', coordinates: [11.5750, 48.1380], available: true, availableSince: new Date(Date.now() - 45 * 60000) },
@@ -51,6 +51,40 @@ const Index = () => {
   const [timeRemaining, setTimeRemaining] = useState<string>('');
 
   const availableSpots = parkingSpots.filter(spot => spot.available).length;
+
+  // Get user's actual location
+  useEffect(() => {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setCurrentLocation([position.coords.longitude, position.coords.latitude]);
+          toast({
+            title: "Location Found",
+            description: "Using your current location to find nearby parking.",
+          });
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          toast({
+            title: "Location Access Denied",
+            description: "Using default location. Enable location access for better results.",
+            variant: "destructive",
+          });
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0,
+        }
+      );
+    } else {
+      toast({
+        title: "Location Not Supported",
+        description: "Your browser doesn't support geolocation.",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
   
   const getDistanceToSpot = (spot: ParkingSpot) => {
     const distance = calculateDistance(
