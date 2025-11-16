@@ -50,15 +50,26 @@ const Index = () => {
   const [parkingDuration, setParkingDuration] = useState<string>('60');
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [mapInstance, setMapInstance] = useState<any>(null);
+  const [manualPinLocation, setManualPinLocation] = useState<[number, number] | null>(null);
 
   const availableSpots = parkingSpots.filter(spot => spot.available).length;
 
-  // Get user's actual location
+  // Get user's actual location and center map
   useEffect(() => {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setCurrentLocation([position.coords.longitude, position.coords.latitude]);
+          const newLocation: [number, number] = [position.coords.longitude, position.coords.latitude];
+          setCurrentLocation(newLocation);
+          
+          // Center map on user's location
+          if (mapInstance) {
+            mapInstance.flyTo({
+              center: newLocation,
+              zoom: 15,
+            });
+          }
+          
           toast({
             title: "Location Found",
             description: "Using your current location to find nearby parking.",
@@ -85,7 +96,7 @@ const Index = () => {
         variant: "destructive",
       });
     }
-  }, [toast]);
+  }, [toast, mapInstance]);
   
   const getDistanceToSpot = (spot: ParkingSpot) => {
     const distance = calculateDistance(
@@ -170,45 +181,32 @@ const Index = () => {
       return;
     }
 
-    // Find nearest available spot within 100m
-    const nearbySpots = parkingSpots.filter(spot => {
-      const distance = calculateDistance(
-        currentLocation[1],
-        currentLocation[0],
-        spot.coordinates[1],
-        spot.coordinates[0]
-      );
-      return spot.available && distance <= 0.1; // Within 100m
-    });
-
-    const parkingSpot = nearbySpots[0];
+    // Use manual pin location if set, otherwise use current location
+    const spotLocation = manualPinLocation || currentLocation;
     
-    if (!parkingSpot) {
-      toast({
-        title: "No Nearby Spots",
-        description: "No available parking spots within 100m.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Create a new parking spot at the location
+    const newSpotId = `user-${Date.now()}`;
+    const newSpot: ParkingSpot = {
+      id: newSpotId,
+      coordinates: spotLocation,
+      available: false,
+    };
 
     const now = new Date();
     const returnTime = new Date(now.getTime() + duration * 60000);
     
     setUserParking({
-      spotId: parkingSpot.id,
+      spotId: newSpotId,
       parkingTime: now,
       returnTime: returnTime,
       durationMinutes: duration,
     });
 
-    setParkingSpots(spots =>
-      spots.map(spot =>
-        spot.id === parkingSpot.id ? { ...spot, available: false, availableSince: undefined } : spot
-      )
-    );
+    // Add the new spot to the map
+    setParkingSpots(spots => [...spots, newSpot]);
 
     setShowTimerDialog(false);
+    setManualPinLocation(null);
     toast({
       title: "Parking Timer Set",
       description: `You'll be reminded in ${duration} minutes.`,
@@ -225,24 +223,7 @@ const Index = () => {
   const handleTakeSpot = () => {
     if (!selectedSpot) return;
 
-    // Check if user is within 100m of the spot
-    const distance = calculateDistance(
-      currentLocation[1],
-      currentLocation[0],
-      selectedSpot.coordinates[1],
-      selectedSpot.coordinates[0]
-    );
-
-    if (distance > 0.1) { // 0.1 km = 100m
-      toast({
-        title: "Too Far Away",
-        description: "You must be within 100m of the parking spot to take it.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Set up parking session
+    // Set up parking session - no distance check
     setShowTimerDialog(true);
     setSelectedSpot(null);
   };
@@ -279,6 +260,8 @@ const Index = () => {
             currentLocation={currentLocation}
             onSpotClick={handleSpotClick}
             onMapReady={setMapInstance}
+            manualPinLocation={manualPinLocation}
+            onManualPinMove={setManualPinLocation}
           />
           
           {/* Recenter Button */}
