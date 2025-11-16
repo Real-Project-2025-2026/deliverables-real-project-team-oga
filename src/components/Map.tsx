@@ -114,7 +114,7 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick }: MapProp
       markers.current[spot.id] = marker;
       console.log('Marker added successfully for spot:', spot.id);
     });
-  }, [parkingSpots, onSpotClick]);
+  }, [parkingSpots]);
 
   return (
     <div className="relative w-full h-full">
