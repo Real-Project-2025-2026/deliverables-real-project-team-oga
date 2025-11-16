@@ -259,7 +259,7 @@ const Index = () => {
           <Button
             onClick={handleRecenter}
             size="icon"
-            className="absolute bottom-4 right-4 z-10 h-12 w-12 rounded-full shadow-lg"
+            className="absolute bottom-20 right-4 z-10 h-12 w-12 rounded-full shadow-lg"
             aria-label="Recenter map on my location"
           >
             <Locate className="h-5 w-5" />
