@@ -73,6 +73,8 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick }: MapProp
   useEffect(() => {
     if (!map.current) return;
 
+    console.log('Updating markers, parkingSpots:', parkingSpots);
+
     // Remove old markers
     Object.values(markers.current).forEach(marker => marker.remove());
     markers.current = {};
@@ -80,6 +82,8 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick }: MapProp
     // Add new markers
     parkingSpots.forEach(spot => {
       if (!map.current) return;
+
+      console.log('Adding marker for spot:', spot.id, spot.coordinates);
 
       const el = document.createElement('div');
       el.className = 'parking-marker';
@@ -108,8 +112,9 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick }: MapProp
         .addTo(map.current);
 
       markers.current[spot.id] = marker;
+      console.log('Marker added successfully for spot:', spot.id);
     });
-  }, [parkingSpots]);
+  }, [parkingSpots, onSpotClick]);
 
   return (
     <div className="relative w-full h-full">
