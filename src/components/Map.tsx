@@ -20,6 +20,7 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick }: MapProp
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const currentLocationMarker = useRef<mapboxgl.Marker | null>(null);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -44,6 +45,7 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick }: MapProp
     );
 
     map.current.on('load', () => {
+      setIsMapLoaded(true);
       if (onMapReady && map.current) {
         onMapReady(map.current);
       }
@@ -71,7 +73,7 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick }: MapProp
 
   // Update markers when parking spots change
   useEffect(() => {
-    if (!map.current) return;
+    if (!map.current || !isMapLoaded) return;
 
     console.log('Updating markers, parkingSpots:', parkingSpots);
 
@@ -114,7 +116,7 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick }: MapProp
       markers.current[spot.id] = marker;
       console.log('Marker added successfully for spot:', spot.id);
     });
-  }, [parkingSpots]);
+  }, [parkingSpots, isMapLoaded]);
 
   return (
     <div className="relative w-full h-full">
