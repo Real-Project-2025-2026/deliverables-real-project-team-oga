@@ -3,16 +3,15 @@ import { MapPin, Navigation } from 'lucide-react';
 
 interface ParkingButtonProps {
   onToggle: (isParked: boolean) => void;
+  isParked?: boolean;
 }
 
-const ParkingButton = ({ onToggle }: ParkingButtonProps) => {
-  const [isParked, setIsParked] = useState(false);
+const ParkingButton = ({ onToggle, isParked = false }: ParkingButtonProps) => {
   const [isAnimating, setIsAnimating] = useState(false);
 
   const handleToggle = () => {
     setIsAnimating(true);
     const newState = !isParked;
-    setIsParked(newState);
     onToggle(newState);
     
     setTimeout(() => setIsAnimating(false), 300);

@@ -170,33 +170,49 @@ const Index = () => {
       return;
     }
 
-    // Find user's current location spot (they're at currentLocation)
-    const nearestSpot = parkingSpots.find(spot => spot.coordinates[0] === currentLocation[0]);
-    const parkingSpot = nearestSpot || parkingSpots.find(spot => spot.available);
-    
-    if (parkingSpot) {
-      const now = new Date();
-      const returnTime = new Date(now.getTime() + duration * 60000);
-      
-      setUserParking({
-        spotId: parkingSpot.id,
-        parkingTime: now,
-        returnTime: returnTime,
-        durationMinutes: duration,
-      });
-
-      setParkingSpots(spots =>
-        spots.map(spot =>
-          spot.id === parkingSpot.id ? { ...spot, available: false, availableSince: undefined } : spot
-        )
+    // Find nearest available spot within 100m
+    const nearbySpots = parkingSpots.filter(spot => {
+      const distance = calculateDistance(
+        currentLocation[1],
+        currentLocation[0],
+        spot.coordinates[1],
+        spot.coordinates[0]
       );
+      return spot.available && distance <= 0.1; // Within 100m
+    });
 
-      setShowTimerDialog(false);
+    const parkingSpot = nearbySpots[0];
+    
+    if (!parkingSpot) {
       toast({
-        title: "Parking Timer Set",
-        description: `You'll be reminded ${duration} minutes before you need to return.`,
+        title: "No Nearby Spots",
+        description: "No available parking spots within 100m.",
+        variant: "destructive",
       });
+      return;
     }
+
+    const now = new Date();
+    const returnTime = new Date(now.getTime() + duration * 60000);
+    
+    setUserParking({
+      spotId: parkingSpot.id,
+      parkingTime: now,
+      returnTime: returnTime,
+      durationMinutes: duration,
+    });
+
+    setParkingSpots(spots =>
+      spots.map(spot =>
+        spot.id === parkingSpot.id ? { ...spot, available: false, availableSince: undefined } : spot
+      )
+    );
+
+    setShowTimerDialog(false);
+    toast({
+      title: "Parking Timer Set",
+      description: `You'll be reminded in ${duration} minutes.`,
+    });
   };
 
   const handleSpotClick = (spotId: string) => {
@@ -207,18 +223,28 @@ const Index = () => {
   };
 
   const handleTakeSpot = () => {
-    if (selectedSpot) {
-      setParkingSpots(spots =>
-        spots.map(spot =>
-          spot.id === selectedSpot.id ? { ...spot, available: false, availableSince: undefined } : spot
-        )
-      );
+    if (!selectedSpot) return;
+
+    // Check if user is within 100m of the spot
+    const distance = calculateDistance(
+      currentLocation[1],
+      currentLocation[0],
+      selectedSpot.coordinates[1],
+      selectedSpot.coordinates[0]
+    );
+
+    if (distance > 0.1) { // 0.1 km = 100m
       toast({
-        title: "Spot Reserved!",
-        description: "This parking spot is now yours.",
+        title: "Too Far Away",
+        description: "You must be within 100m of the parking spot to take it.",
+        variant: "destructive",
       });
-      setSelectedSpot(null);
+      return;
     }
+
+    // Set up parking session
+    setShowTimerDialog(true);
+    setSelectedSpot(null);
   };
 
   const handleRecenter = () => {
@@ -339,7 +365,7 @@ const Index = () => {
               </div>
             )}
             <StatsCard availableSpots={availableSpots} totalUsers={42} />
-            <ParkingButton onToggle={handleParkingToggle} />
+            <ParkingButton onToggle={handleParkingToggle} isParked={!!userParking} />
           </div>
         </div>
       </div>
