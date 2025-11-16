@@ -94,7 +94,7 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
     return () => {
       map.current?.remove();
     };
-  }, [onMapReady, onManualPinMove]);
+  }, [onMapReady]);
 
   // Update manual pin location when prop changes
   useEffect(() => {
