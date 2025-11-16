@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from 'date-fns';
+import { calculateDistance } from '@/lib/utils';
 
 interface ParkingSpot {
   id: string;
@@ -22,6 +23,7 @@ interface ParkingSpot {
 
 const Index = () => {
   const { toast } = useToast();
+  const currentLocation: [number, number] = [11.5800, 48.1550];
   const [parkingSpots, setParkingSpots] = useState<ParkingSpot[]>([
     { id: '1', coordinates: [11.5820, 48.1351], available: true, availableSince: new Date(Date.now() - 15 * 60000) },
     { id: '2', coordinates: [11.5750, 48.1380], available: true, availableSince: new Date(Date.now() - 45 * 60000) },
@@ -35,6 +37,16 @@ const Index = () => {
   const [selectedSpot, setSelectedSpot] = useState<ParkingSpot | null>(null);
 
   const availableSpots = parkingSpots.filter(spot => spot.available).length;
+  
+  const getDistanceToSpot = (spot: ParkingSpot) => {
+    const distance = calculateDistance(
+      currentLocation[1],
+      currentLocation[0],
+      spot.coordinates[1],
+      spot.coordinates[0]
+    );
+    return distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance.toFixed(1)}km`;
+  };
 
   const handleParkingToggle = (isParked: boolean) => {
     if (isParked) {
@@ -105,7 +117,7 @@ const Index = () => {
         <div className="h-full px-6">
           <Map 
             parkingSpots={parkingSpots} 
-            currentLocation={[11.5800, 48.1550]}
+            currentLocation={currentLocation}
             onSpotClick={handleSpotClick}
           />
         </div>
@@ -116,9 +128,14 @@ const Index = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Parking Spot Available</DialogTitle>
-            <DialogDescription>
-              This spot has been available for{' '}
-              {selectedSpot?.availableSince && formatDistanceToNow(selectedSpot.availableSince)}
+            <DialogDescription className="space-y-1">
+              <div>
+                <strong>Distance:</strong> {selectedSpot && getDistanceToSpot(selectedSpot)} away
+              </div>
+              <div>
+                <strong>Available for:</strong>{' '}
+                {selectedSpot?.availableSince && formatDistanceToNow(selectedSpot.availableSince)}
+              </div>
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-center pt-4">
