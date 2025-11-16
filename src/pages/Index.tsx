@@ -128,16 +128,16 @@ const Index = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Parking Spot Available</DialogTitle>
-            <DialogDescription className="space-y-1">
-              <div>
-                <strong>Distance:</strong> {selectedSpot && getDistanceToSpot(selectedSpot)} away
-              </div>
-              <div>
-                <strong>Available for:</strong>{' '}
-                {selectedSpot?.availableSince && formatDistanceToNow(selectedSpot.availableSince)}
-              </div>
-            </DialogDescription>
           </DialogHeader>
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <div>
+              <strong className="text-foreground">Distance:</strong> {selectedSpot && getDistanceToSpot(selectedSpot)} away
+            </div>
+            <div>
+              <strong className="text-foreground">Available for:</strong>{' '}
+              {selectedSpot?.availableSince && formatDistanceToNow(selectedSpot.availableSince)}
+            </div>
+          </div>
           <div className="flex justify-center pt-4">
             <Button onClick={handleTakeSpot} size="lg" className="w-full">
               Take This Spot
