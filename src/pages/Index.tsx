@@ -181,29 +181,46 @@ const Index = () => {
       return;
     }
 
-    // Use manual pin location if set, otherwise use current location
-    const spotLocation = manualPinLocation || currentLocation;
-    
-    // Create a new parking spot at the location
-    const newSpotId = `user-${Date.now()}`;
-    const newSpot: ParkingSpot = {
-      id: newSpotId,
-      coordinates: spotLocation,
-      available: false,
-    };
-
     const now = new Date();
     const returnTime = new Date(now.getTime() + duration * 60000);
     
-    setUserParking({
-      spotId: newSpotId,
-      parkingTime: now,
-      returnTime: returnTime,
-      durationMinutes: duration,
-    });
+    // Check if we're taking an existing spot or creating a new one
+    if (selectedSpot) {
+      // Taking an existing spot
+      setUserParking({
+        spotId: selectedSpot.id,
+        parkingTime: now,
+        returnTime: returnTime,
+        durationMinutes: duration,
+      });
 
-    // Add the new spot to the map
-    setParkingSpots(spots => [...spots, newSpot]);
+      setParkingSpots(spots =>
+        spots.map(spot =>
+          spot.id === selectedSpot.id ? { ...spot, available: false, availableSince: undefined } : spot
+        )
+      );
+      
+      setSelectedSpot(null);
+    } else {
+      // Creating a new spot at manual pin location or current location
+      const spotLocation = manualPinLocation || currentLocation;
+      const newSpotId = `user-${Date.now()}`;
+      const newSpot: ParkingSpot = {
+        id: newSpotId,
+        coordinates: spotLocation,
+        available: false,
+      };
+
+      setUserParking({
+        spotId: newSpotId,
+        parkingTime: now,
+        returnTime: returnTime,
+        durationMinutes: duration,
+      });
+
+      // Add the new spot to the map
+      setParkingSpots(spots => [...spots, newSpot]);
+    }
 
     setShowTimerDialog(false);
     setManualPinLocation(null);
@@ -223,9 +240,9 @@ const Index = () => {
   const handleTakeSpot = () => {
     if (!selectedSpot) return;
 
-    // Set up parking session - no distance check
+    // Taking an existing spot - just show timer dialog
+    // The spot will be marked as taken when timer is set
     setShowTimerDialog(true);
-    setSelectedSpot(null);
   };
 
   const handleRecenter = () => {

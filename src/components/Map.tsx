@@ -55,7 +55,7 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
     });
 
     // Add draggable manual pin on map move
-    map.current.on('movestart', () => {
+    map.current.on('move', () => {
       if (map.current && !manualPinMarker.current) {
         const center = map.current.getCenter();
         const el = document.createElement('div');
@@ -69,20 +69,21 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
             <text x="12" y="16" text-anchor="middle" fill="white" font-size="14" font-weight="bold">P</text>
           </svg>
         `;
-        el.style.cursor = 'move';
+        el.style.cursor = 'default';
         el.style.filter = 'drop-shadow(0 4px 8px rgba(0,0,0,0.4))';
+        el.style.pointerEvents = 'none'; // Pin doesn't block map interactions
 
-        manualPinMarker.current = new mapboxgl.Marker(el, { draggable: true })
+        manualPinMarker.current = new mapboxgl.Marker(el, { draggable: false })
           .setLngLat([center.lng, center.lat])
           .addTo(map.current);
 
-        manualPinMarker.current.on('dragend', () => {
-          const lngLat = manualPinMarker.current?.getLngLat();
-          if (lngLat && onManualPinMove) {
-            onManualPinMove([lngLat.lng, lngLat.lat]);
-          }
-        });
-
+        if (onManualPinMove) {
+          onManualPinMove([center.lng, center.lat]);
+        }
+      } else if (map.current && manualPinMarker.current) {
+        // Update pin position to follow map center
+        const center = map.current.getCenter();
+        manualPinMarker.current.setLngLat([center.lng, center.lat]);
         if (onManualPinMove) {
           onManualPinMove([center.lng, center.lat]);
         }
@@ -93,7 +94,7 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
     return () => {
       map.current?.remove();
     };
-  }, [onMapReady]);
+  }, [onMapReady, onManualPinMove]);
 
   // Update manual pin location when prop changes
   useEffect(() => {
