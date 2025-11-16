@@ -13,13 +13,16 @@ interface MapProps {
   parkingSpots: ParkingSpot[];
   currentLocation?: [number, number];
   onSpotClick?: (spotId: string) => void;
+  manualPinLocation?: [number, number] | null;
+  onManualPinMove?: (location: [number, number]) => void;
 }
 
-const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick }: MapProps) => {
+const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPinLocation, onManualPinMove }: MapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const currentLocationMarker = useRef<mapboxgl.Marker | null>(null);
+  const manualPinMarker = useRef<mapboxgl.Marker | null>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
 
   useEffect(() => {
@@ -31,7 +34,7 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick }: MapProp
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/light-v11',
-      center: [11.5800, 48.1550], // Hohenzollernstr. 48, Munich
+      center: currentLocation || [11.5800, 48.1550],
       zoom: 15,
       pitch: 0,
     });
@@ -65,11 +68,56 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick }: MapProp
         .addTo(map.current);
     }
 
+    // Add draggable manual pin on map move
+    map.current.on('movestart', () => {
+      if (map.current && !manualPinMarker.current) {
+        const center = map.current.getCenter();
+        const el = document.createElement('div');
+        el.className = 'manual-pin-marker';
+        el.innerHTML = `
+          <svg width="40" height="50" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 20 12 20s12-11 12-20c0-6.627-5.373-12-12-12z" 
+                  fill="hsl(142, 76%, 36%)" 
+                  stroke="white" 
+                  stroke-width="2"/>
+            <text x="12" y="16" text-anchor="middle" fill="white" font-size="14" font-weight="bold">P</text>
+          </svg>
+        `;
+        el.style.cursor = 'move';
+        el.style.filter = 'drop-shadow(0 4px 8px rgba(0,0,0,0.4))';
+
+        manualPinMarker.current = new mapboxgl.Marker(el, { draggable: true })
+          .setLngLat([center.lng, center.lat])
+          .addTo(map.current);
+
+        manualPinMarker.current.on('dragend', () => {
+          const lngLat = manualPinMarker.current?.getLngLat();
+          if (lngLat && onManualPinMove) {
+            onManualPinMove([lngLat.lng, lngLat.lat]);
+          }
+        });
+
+        if (onManualPinMove) {
+          onManualPinMove([center.lng, center.lat]);
+        }
+      }
+    });
+
     // Cleanup
     return () => {
       map.current?.remove();
     };
-  }, [onMapReady, currentLocation]);
+  }, [onMapReady, currentLocation, onManualPinMove]);
+
+  // Update manual pin location when prop changes
+  useEffect(() => {
+    if (manualPinLocation && manualPinMarker.current) {
+      manualPinMarker.current.setLngLat(manualPinLocation);
+    } else if (!manualPinLocation && manualPinMarker.current) {
+      manualPinMarker.current.remove();
+      manualPinMarker.current = null;
+    }
+  }, [manualPinLocation]);
 
   // Update markers when parking spots change
   useEffect(() => {
