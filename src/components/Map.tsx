@@ -33,55 +33,70 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
   const [tokenInput, setTokenInput] = useState('');
   const [status, setStatus] = useState<'loading' | 'input' | 'ready' | 'error'>('loading');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const fetchAttempted = useRef(false);
 
-  // On mount, check for cached token or fetch from server
+  // On mount, try to get token
   useEffect(() => {
-    const cachedToken = localStorage.getItem(MAPBOX_TOKEN_KEY);
-    
-    if (cachedToken) {
-      setMapboxToken(cachedToken);
-      return;
-    }
+    if (fetchAttempted.current) return;
+    fetchAttempted.current = true;
 
-    // Try to fetch token from edge function
-    const fetchToken = async () => {
+    const init = async () => {
+      // Check localStorage first
+      const cachedToken = localStorage.getItem(MAPBOX_TOKEN_KEY);
+      
+      if (cachedToken && cachedToken.startsWith('pk.')) {
+        console.log('Using cached Mapbox token');
+        setMapboxToken(cachedToken);
+        return;
+      }
+
+      // Clear any invalid cached token
+      localStorage.removeItem(MAPBOX_TOKEN_KEY);
+
+      // Try edge function
+      console.log('Fetching token from edge function...');
       try {
         const { data, error } = await supabase.functions.invoke('mapbox-proxy', {
           body: { action: 'get-token' }
         });
 
-        if (error || data?.error || !data?.token) {
-          console.log('Edge function failed, showing token input');
-          setStatus('input');
+        console.log('Edge function response:', { data, error });
+
+        if (!error && data?.token && data.token.startsWith('pk.')) {
+          console.log('Got valid token from edge function');
+          localStorage.setItem(MAPBOX_TOKEN_KEY, data.token);
+          setMapboxToken(data.token);
           return;
         }
-
-        localStorage.setItem(MAPBOX_TOKEN_KEY, data.token);
-        setMapboxToken(data.token);
       } catch (err) {
         console.log('Edge function error:', err);
-        setStatus('input');
       }
+
+      // Fallback to manual input
+      console.log('Showing manual token input');
+      setStatus('input');
     };
 
-    // Set a short timeout to prevent hanging
+    // Set timeout for fallback
     const timeout = setTimeout(() => {
       if (status === 'loading' && !mapboxToken) {
+        console.log('Timeout - showing manual input');
         setStatus('input');
       }
-    }, 5000);
+    }, 8000);
 
-    fetchToken();
+    init();
 
     return () => clearTimeout(timeout);
   }, []);
 
   const handleSaveToken = useCallback(() => {
-    if (tokenInput.trim()) {
-      const token = tokenInput.trim();
+    const token = tokenInput.trim();
+    if (token && token.startsWith('pk.')) {
       localStorage.setItem(MAPBOX_TOKEN_KEY, token);
       setMapboxToken(token);
       setStatus('loading');
+      setErrorMsg(null);
     }
   }, [tokenInput]);
 
@@ -90,11 +105,18 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
     setMapboxToken(null);
     setStatus('input');
     setErrorMsg(null);
+    setIsMapLoaded(false);
+    if (map.current) {
+      map.current.remove();
+      map.current = null;
+    }
   }, []);
 
   // Initialize map when token is available
   useEffect(() => {
-    if (!mapContainer.current || !mapboxToken) return;
+    if (!mapContainer.current || !mapboxToken || map.current) return;
+
+    console.log('Initializing Mapbox map...');
 
     try {
       mapboxgl.accessToken = mapboxToken;
@@ -109,7 +131,8 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
 
       const loadTimeout = setTimeout(() => {
         if (status !== 'ready') {
-          setErrorMsg('Map took too long to load');
+          console.log('Map load timeout');
+          setErrorMsg('Map took too long to load. Try clearing token and re-entering.');
           setStatus('error');
         }
       }, 20000);
@@ -120,24 +143,19 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
       );
 
       map.current.on('load', () => {
+        console.log('Map loaded successfully!');
         clearTimeout(loadTimeout);
         setIsMapLoaded(true);
         setStatus('ready');
-        if (onMapReady && map.current) {
-          onMapReady(map.current);
-        }
+        onMapReady?.(map.current!);
       });
 
       map.current.on('error', (e) => {
         console.error('Map error:', e);
         clearTimeout(loadTimeout);
-        const msg = e.error?.message || 'Map failed to load';
-        if (msg.includes('access') || msg.includes('token') || msg.includes('401')) {
-          handleClearToken();
-        } else {
-          setErrorMsg(msg);
-          setStatus('error');
-        }
+        handleClearToken();
+        setErrorMsg('Invalid token or map error. Please re-enter your token.');
+        setStatus('input');
       });
 
       map.current.on('move', () => {
@@ -147,7 +165,6 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
         
         if (!manualPinMarker.current) {
           const el = document.createElement('div');
-          el.className = 'manual-pin-marker';
           el.innerHTML = `
             <svg width="40" height="50" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 20 12 20s12-11 12-20c0-6.627-5.373-12-12-12z" 
@@ -176,10 +193,9 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
     }
 
     return () => {
-      map.current?.remove();
-      map.current = null;
+      // Don't remove map on cleanup - only on unmount
     };
-  }, [mapboxToken, onMapReady, handleClearToken]);
+  }, [mapboxToken, onMapReady, handleClearToken, onManualPinMove, currentLocation, status]);
 
   // Update manual pin
   useEffect(() => {
@@ -197,8 +213,10 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
 
     if (!currentLocationMarker.current) {
       const el = document.createElement('div');
-      el.className = 'current-location-marker';
       el.innerHTML = `<div class="pulse-ring"></div><div class="location-dot"></div>`;
+      el.style.width = '24px';
+      el.style.height = '24px';
+      el.style.position = 'relative';
       currentLocationMarker.current = new mapboxgl.Marker(el)
         .setLngLat(currentLocation)
         .addTo(map.current);
@@ -218,7 +236,6 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
       if (!map.current) return;
 
       const el = document.createElement('div');
-      el.className = 'parking-marker';
       el.innerHTML = `
         <svg width="32" height="40" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 20 12 20s12-11 12-20c0-6.627-5.373-12-12-12z" 
@@ -229,7 +246,6 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
       `;
       el.style.cursor = 'pointer';
       el.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))';
-      el.style.transition = 'all 0.3s ease';
 
       if (spot.available && onSpotClick) {
         el.addEventListener('click', () => onSpotClick(spot.id));
@@ -243,18 +259,19 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
     });
   }, [parkingSpots, isMapLoaded, onSpotClick]);
 
-  // Render token input form
+  // Token input form
   if (status === 'input') {
     return (
       <div className="relative w-full h-full flex items-center justify-center bg-muted/50 rounded-3xl">
         <div className="bg-card p-6 rounded-xl shadow-lg max-w-md w-full mx-4 space-y-4">
-          <h3 className="text-lg font-semibold text-foreground">Mapbox Access Token Required</h3>
+          <h3 className="text-lg font-semibold text-foreground">Mapbox Access Token</h3>
           <p className="text-sm text-muted-foreground">
-            Enter your Mapbox public access token. Get one free at{' '}
-            <a href="https://mapbox.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">
-              mapbox.com
+            Enter your Mapbox public token (starts with pk.). Get one at{' '}
+            <a href="https://account.mapbox.com/access-tokens/" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+              mapbox.com/access-tokens
             </a>
           </p>
+          {errorMsg && <p className="text-sm text-destructive">{errorMsg}</p>}
           <Input
             type="text"
             placeholder="pk.eyJ1..."
@@ -262,32 +279,35 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
             onChange={(e) => setTokenInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSaveToken()}
           />
-          <Button onClick={handleSaveToken} className="w-full" disabled={!tokenInput.trim()}>
-            Save Token
+          <Button onClick={handleSaveToken} className="w-full" disabled={!tokenInput.trim().startsWith('pk.')}>
+            Load Map
           </Button>
         </div>
       </div>
     );
   }
 
-  // Render loading state
+  // Loading state
   if (status === 'loading') {
     return (
       <div className="relative w-full h-full flex items-center justify-center bg-muted/50 rounded-3xl">
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-3">
           <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
           <p className="text-sm text-muted-foreground">Loading map...</p>
+          <Button variant="ghost" size="sm" onClick={handleClearToken} className="text-xs">
+            Enter token manually
+          </Button>
         </div>
       </div>
     );
   }
 
-  // Render error state
+  // Error state
   if (status === 'error') {
     return (
       <div className="relative w-full h-full flex items-center justify-center bg-muted/50 rounded-3xl">
         <div className="bg-card p-6 rounded-xl shadow-lg max-w-md w-full mx-4 space-y-4 text-center">
-          <p className="text-destructive font-medium">Failed to load map</p>
+          <p className="text-destructive font-medium">Map Error</p>
           <p className="text-sm text-muted-foreground">{errorMsg}</p>
           <Button variant="outline" onClick={handleClearToken}>
             Enter Token Manually
@@ -300,10 +320,9 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
   return (
     <div className="relative w-full h-full">
       <style>{`
-        .current-location-marker { width: 24px; height: 24px; position: relative; }
         .location-dot {
           width: 16px; height: 16px;
-          background: hsl(var(--success));
+          background: hsl(142, 76%, 36%);
           border: 3px solid white; border-radius: 50%;
           position: absolute; top: 50%; left: 50%;
           transform: translate(-50%, -50%);
@@ -311,7 +330,7 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
         }
         .pulse-ring {
           width: 40px; height: 40px;
-          border: 3px solid hsl(var(--success)); border-radius: 50%;
+          border: 3px solid hsl(142, 76%, 36%); border-radius: 50%;
           position: absolute; top: 50%; left: 50%;
           transform: translate(-50%, -50%);
           animation: pulse 2s ease-out infinite; opacity: 0; z-index: 1;
