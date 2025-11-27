@@ -12,7 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDistanceToNow, differenceInMinutes } from "date-fns";
 import { calculateDistance } from "@/lib/utils";
-import { Clock, Locate, LogOut, ChevronUp, ChevronDown } from "lucide-react";
+import { Clock, Locate, LogOut, ChevronUp, ChevronDown, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 interface ParkingSpot {
   id: string;
@@ -398,9 +399,16 @@ const Index = () => {
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-10 pt-safe">
         <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">OGAP</h1>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Find & Share Free Parking</p>
+          <div className="flex items-center gap-3">
+            <Link to="/">
+              <Button variant="ghost" size="icon" className="touch-target" aria-label="Zurück zur Startseite">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">OGAP</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Find & Share Free Parking</p>
+            </div>
           </div>
           {user ? <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-2 touch-target">
               <LogOut className="h-4 w-4" />
