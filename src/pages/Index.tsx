@@ -502,15 +502,20 @@ const Index = () => {
       </div>
 
       {/* Recenter Button - floating above bottom panel */}
-      <Button
-        onClick={handleRecenter}
-        size="icon"
-        className="fixed right-8 z-20 h-12 w-12 rounded-full shadow-lg bg-card border border-border hover:bg-accent transition-all duration-300"
-        style={{ bottom: isStatsExpanded ? '18rem' : '10rem' }}
-        aria-label="Recenter map on my location"
+      <div 
+        className="fixed right-6 z-30 transition-all duration-300"
+        style={{ bottom: isStatsExpanded ? 'calc(16rem + 1rem)' : 'calc(8rem + 1rem)' }}
       >
-        <Locate className="h-5 w-5 text-primary" />
-      </Button>
+        <Button
+          onClick={handleRecenter}
+          size="icon"
+          variant="outline"
+          className="h-12 w-12 rounded-full shadow-lg bg-card hover:bg-accent"
+          aria-label="Recenter map on my location"
+        >
+          <Locate className="h-5 w-5 text-primary" />
+        </Button>
+      </div>
 
       {/* Spot Details Dialog */}
       <Dialog open={!!selectedSpot} onOpenChange={(open) => !open && setSelectedSpot(null)}>
