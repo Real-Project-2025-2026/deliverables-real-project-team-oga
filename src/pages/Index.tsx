@@ -501,7 +501,7 @@ const Index = () => {
       {/* Recenter Button - floating above bottom panel */}
       <div
         className="fixed right-6 z-30 transition-all duration-300"
-        style={{ bottom: isStatsExpanded ? "calc(16rem + 2rem)" : "calc(8rem + 2rem)" }}
+        style={{ bottom: isStatsExpanded ? "calc(16rem + 0.5rem)" : "calc(8rem + 0.5rem)" }}
       >
         <Button
           onClick={handleRecenter}
