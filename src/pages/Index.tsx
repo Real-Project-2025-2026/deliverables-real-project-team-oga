@@ -5,6 +5,7 @@ import ParkingButton from '@/components/ParkingButton';
 import StatsCard from '@/components/StatsCard';
 import AuthDialog from '@/components/AuthDialog';
 import { useToast } from '@/hooks/use-toast';
+import { usePresence } from '@/hooks/usePresence';
 import {
   Dialog,
   DialogContent,
@@ -36,6 +37,7 @@ interface UserParking {
 
 const Index = () => {
   const { toast } = useToast();
+  const activeUsers = usePresence();
   const [currentLocation, setCurrentLocation] = useState<[number, number]>([11.5800, 48.1550]);
   const [parkingSpots, setParkingSpots] = useState<ParkingSpot[]>([]);
   const [selectedSpot, setSelectedSpot] = useState<ParkingSpot | null>(null);
@@ -526,7 +528,7 @@ const Index = () => {
                 </div>
               </div>
             )}
-            <StatsCard availableSpots={availableSpots} totalUsers={42} />
+            <StatsCard availableSpots={availableSpots} totalUsers={activeUsers} />
             <ParkingButton onToggle={handleParkingToggle} isParked={!!userParking} />
           </div>
         </div>
