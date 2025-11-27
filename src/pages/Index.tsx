@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { User, Session } from '@supabase/supabase-js';
 import Map from '@/components/Map';
 import ParkingButton from '@/components/ParkingButton';
 import StatsCard from '@/components/StatsCard';
+import AuthDialog from '@/components/AuthDialog';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -15,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDistanceToNow, differenceInMinutes } from 'date-fns';
 import { calculateDistance } from '@/lib/utils';
-import { Clock, Locate } from 'lucide-react';
+import { Clock, Locate, LogOut } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ParkingSpot {
@@ -44,6 +46,27 @@ const Index = () => {
   const [mapInstance, setMapInstance] = useState<any>(null);
   const [manualPinLocation, setManualPinLocation] = useState<[number, number] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'park' | 'take' | null>(null);
+
+  // Auth state management
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+      }
+    );
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const availableSpots = parkingSpots.filter(spot => spot.available).length;
 
@@ -215,6 +238,12 @@ const Index = () => {
 
   const handleParkingToggle = async (isParked: boolean) => {
     if (isParked) {
+      // Check if user is authenticated before allowing parking
+      if (!user) {
+        setPendingAction('park');
+        setShowAuthDialog(true);
+        return;
+      }
       setShowTimerDialog(true);
     } else {
       if (userParking) {
@@ -338,7 +367,32 @@ const Index = () => {
 
   const handleTakeSpot = () => {
     if (!selectedSpot) return;
+    // Check if user is authenticated before allowing to take a spot
+    if (!user) {
+      setPendingAction('take');
+      setShowAuthDialog(true);
+      return;
+    }
     setShowTimerDialog(true);
+  };
+
+  const handleAuthSuccess = () => {
+    // Execute pending action after successful auth
+    if (pendingAction === 'park') {
+      setShowTimerDialog(true);
+    } else if (pendingAction === 'take' && selectedSpot) {
+      setShowTimerDialog(true);
+    }
+    setPendingAction(null);
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setUserParking(null);
+    toast({
+      title: "Signed Out",
+      description: "You've been signed out successfully.",
+    });
   };
 
   const handleRecenter = () => {
@@ -359,9 +413,21 @@ const Index = () => {
     <div className="h-screen w-full bg-background overflow-hidden">
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-10 pt-safe">
-        <div className="px-6 pt-6 pb-4">
-          <h1 className="text-3xl font-bold text-foreground">OGAP</h1>
-          <p className="text-sm text-muted-foreground mt-1">Find & Share Free Parking</p>
+        <div className="px-6 pt-6 pb-4 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">OGAP</h1>
+            <p className="text-sm text-muted-foreground mt-1">Find & Share Free Parking</p>
+          </div>
+          {user ? (
+            <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-2">
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => setShowAuthDialog(true)}>
+              Sign In
+            </Button>
+          )}
         </div>
       </div>
 
@@ -465,6 +531,13 @@ const Index = () => {
           </div>
         </div>
       </div>
+
+      {/* Auth Dialog */}
+      <AuthDialog 
+        open={showAuthDialog} 
+        onOpenChange={setShowAuthDialog}
+        onSuccess={handleAuthSuccess}
+      />
     </div>
   );
 };
