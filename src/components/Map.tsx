@@ -34,6 +34,7 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
   const [status, setStatus] = useState<'loading' | 'input' | 'ready' | 'error'>('loading');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const fetchAttempted = useRef(false);
+  const tokenFetched = useRef(false);
 
   // On mount, try to get token
   useEffect(() => {
@@ -46,6 +47,7 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
       
       if (cachedToken && cachedToken.startsWith('pk.')) {
         console.log('Using cached Mapbox token');
+        tokenFetched.current = true;
         setMapboxToken(cachedToken);
         return;
       }
@@ -64,6 +66,7 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
 
         if (!error && data?.token && data.token.startsWith('pk.')) {
           console.log('Got valid token from edge function');
+          tokenFetched.current = true;
           localStorage.setItem(MAPBOX_TOKEN_KEY, data.token);
           setMapboxToken(data.token);
           return;
@@ -77,9 +80,9 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
       setStatus('input');
     };
 
-    // Set timeout for fallback
+    // Set timeout for fallback - use ref to check actual state
     const timeout = setTimeout(() => {
-      if (status === 'loading' && !mapboxToken) {
+      if (!tokenFetched.current) {
         console.log('Timeout - showing manual input');
         setStatus('input');
       }
@@ -102,6 +105,7 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
 
   const handleClearToken = useCallback(() => {
     localStorage.removeItem(MAPBOX_TOKEN_KEY);
+    tokenFetched.current = false;
     setMapboxToken(null);
     setStatus('input');
     setErrorMsg(null);
