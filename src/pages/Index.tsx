@@ -198,6 +198,56 @@ const Index = () => {
     return distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance.toFixed(1)}km`;
   };
 
+  const findNearestAvailableSpot = () => {
+    const availableParkingSpots = parkingSpots.filter(spot => spot.available);
+    if (availableParkingSpots.length === 0) return null;
+
+    let nearestSpot = availableParkingSpots[0];
+    let minDistance = calculateDistance(
+      currentLocation[1],
+      currentLocation[0],
+      nearestSpot.coordinates[1],
+      nearestSpot.coordinates[0]
+    );
+
+    for (const spot of availableParkingSpots) {
+      const distance = calculateDistance(
+        currentLocation[1],
+        currentLocation[0],
+        spot.coordinates[1],
+        spot.coordinates[0]
+      );
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestSpot = spot;
+      }
+    }
+
+    return nearestSpot;
+  };
+
+  const handleFocusNearestSpot = () => {
+    const nearestSpot = findNearestAvailableSpot();
+    if (nearestSpot && mapInstance) {
+      mapInstance.flyTo({
+        center: nearestSpot.coordinates,
+        zoom: 17,
+        duration: 1000,
+      });
+      setSelectedSpot(nearestSpot);
+      toast({
+        title: "Nearest Spot",
+        description: `Found parking ${getDistanceToSpot(nearestSpot)} away`,
+      });
+    } else if (!nearestSpot) {
+      toast({
+        title: "No Spots Available",
+        description: "There are no available parking spots nearby.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Timer effect
   useEffect(() => {
     if (!userParking) {
@@ -554,25 +604,33 @@ const Index = () => {
             </div>
             
             {/* Expand/Collapse Button with Chevron and Mini Preview */}
-            <button 
-              onClick={() => setIsStatsExpanded(!isStatsExpanded)}
-              className="w-full flex items-center justify-center gap-3 text-muted-foreground hover:text-foreground transition-colors py-1"
-            >
+            <div className="w-full flex items-center justify-center gap-3 py-1">
               {isStatsExpanded ? (
-                <>
+                <button 
+                  onClick={() => setIsStatsExpanded(false)}
+                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                >
                   <ChevronDown className="h-4 w-4" />
                   <span className="text-sm">Hide stats</span>
-                </>
+                </button>
               ) : (
                 <>
-                  <div className="flex items-center gap-2 bg-primary/10 px-3 py-1 rounded-full">
+                  <button 
+                    onClick={handleFocusNearestSpot}
+                    className="flex items-center gap-2 bg-primary/10 px-3 py-1.5 rounded-full hover:bg-primary/20 transition-colors active:scale-95"
+                  >
                     <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                     <span className="text-sm font-medium text-primary">{availableSpots} spots available</span>
-                  </div>
-                  <ChevronUp className="h-4 w-4" />
+                  </button>
+                  <button 
+                    onClick={() => setIsStatsExpanded(true)}
+                    className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                  </button>
                 </>
               )}
-            </button>
+            </div>
             
             {/* Always visible parking button */}
             <ParkingButton onToggle={handleParkingToggle} isParked={!!userParking} />
