@@ -149,10 +149,13 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
           }
         }, 20000);
 
-        map.current.addControl(
-          new mapboxgl.NavigationControl({ visualizePitch: false }),
-          'top-right'
-        );
+        // Only show navigation controls on larger screens
+        if (window.innerWidth >= 768) {
+          map.current.addControl(
+            new mapboxgl.NavigationControl({ visualizePitch: false }),
+            'top-right'
+          );
+        }
 
         map.current.on('load', () => {
           console.log('Map loaded successfully!');
