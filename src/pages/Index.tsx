@@ -619,21 +619,13 @@ const Index = () => {
                   <span className="text-sm">Hide stats</span>
                 </button>
               ) : (
-                <>
-                  <button 
-                    onClick={handleFocusNearestSpot}
-                    className="flex items-center justify-center gap-2 bg-primary/10 px-3 py-1.5 rounded-full hover:bg-primary/20 transition-colors active:scale-95"
-                  >
-                    <div className="w-2 h-2 shrink-0 rounded-full bg-primary animate-pulse" />
-                    <span className="text-sm font-medium text-primary leading-none">{availableSpots} spots available</span>
-                  </button>
-                  <button 
-                    onClick={() => setIsStatsExpanded(true)}
-                    className="text-muted-foreground hover:text-foreground transition-colors p-1"
-                  >
-                    <ChevronUp className="h-4 w-4" />
-                  </button>
-                </>
+                <button 
+                  onClick={handleFocusNearestSpot}
+                  className="flex items-center justify-center gap-2 bg-primary/10 px-3 py-1.5 rounded-full hover:bg-primary/20 transition-colors active:scale-95"
+                >
+                  <div className="w-2 h-2 shrink-0 rounded-full bg-primary animate-pulse" />
+                  <span className="text-sm font-medium text-primary leading-none">{availableSpots} spots available</span>
+                </button>
               )}
             </div>
             
