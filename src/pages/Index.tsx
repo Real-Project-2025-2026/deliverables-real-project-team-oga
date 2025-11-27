@@ -518,7 +518,9 @@ const Index = () => {
             </div>
 
             {/* Always visible parking button */}
-            <ParkingButton onToggle={handleParkingToggle} isParked={!!userParking} />
+            <div className="pb-4">
+              <ParkingButton onToggle={handleParkingToggle} isParked={!!userParking} />
+            </div>
           </div>
         </div>
       </div>
