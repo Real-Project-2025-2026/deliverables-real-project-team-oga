@@ -1,25 +1,19 @@
-import { useState, useEffect } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import Map from '@/components/Map';
-import ParkingButton from '@/components/ParkingButton';
-import StatsCard from '@/components/StatsCard';
-import AuthDialog from '@/components/AuthDialog';
-import { useToast } from '@/hooks/use-toast';
-import { usePresence } from '@/hooks/usePresence';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { useState, useEffect } from "react";
+import { User, Session } from "@supabase/supabase-js";
+import Map from "@/components/Map";
+import ParkingButton from "@/components/ParkingButton";
+import StatsCard from "@/components/StatsCard";
+import AuthDialog from "@/components/AuthDialog";
+import { useToast } from "@/hooks/use-toast";
+import { usePresence } from "@/hooks/usePresence";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { formatDistanceToNow, differenceInMinutes } from 'date-fns';
-import { calculateDistance } from '@/lib/utils';
-import { Clock, Locate, LogOut, ChevronUp, ChevronDown } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { formatDistanceToNow, differenceInMinutes } from "date-fns";
+import { calculateDistance } from "@/lib/utils";
+import { Clock, Locate, LogOut, ChevronUp, ChevronDown } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ParkingSpot {
   id: string;
@@ -38,30 +32,30 @@ interface UserParking {
 const Index = () => {
   const { toast } = useToast();
   const activeUsers = usePresence();
-  const [currentLocation, setCurrentLocation] = useState<[number, number]>([11.5800, 48.1550]);
+  const [currentLocation, setCurrentLocation] = useState<[number, number]>([11.58, 48.155]);
   const [parkingSpots, setParkingSpots] = useState<ParkingSpot[]>([]);
   const [selectedSpot, setSelectedSpot] = useState<ParkingSpot | null>(null);
   const [userParking, setUserParking] = useState<UserParking | null>(null);
   const [showTimerDialog, setShowTimerDialog] = useState(false);
-  const [parkingDuration, setParkingDuration] = useState<string>('60');
-  const [timeRemaining, setTimeRemaining] = useState<string>('');
+  const [parkingDuration, setParkingDuration] = useState<string>("60");
+  const [timeRemaining, setTimeRemaining] = useState<string>("");
   const [mapInstance, setMapInstance] = useState<any>(null);
   const [manualPinLocation, setManualPinLocation] = useState<[number, number] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
-  const [pendingAction, setPendingAction] = useState<'park' | 'take' | null>(null);
+  const [pendingAction, setPendingAction] = useState<"park" | "take" | null>(null);
   const [isStatsExpanded, setIsStatsExpanded] = useState(false);
 
   // Auth state management
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-      }
-    );
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -71,24 +65,22 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const availableSpots = parkingSpots.filter(spot => spot.available).length;
+  const availableSpots = parkingSpots.filter((spot) => spot.available).length;
 
   // Fetch parking spots from database
   useEffect(() => {
     const fetchParkingSpots = async () => {
-      const { data, error } = await supabase
-        .from('parking_spots')
-        .select('*');
-      
+      const { data, error } = await supabase.from("parking_spots").select("*");
+
       if (error) {
-        console.error('Error fetching parking spots:', error);
+        console.error("Error fetching parking spots:", error);
         toast({
           title: "Error Loading Spots",
           description: "Could not load parking spots from the database.",
           variant: "destructive",
         });
       } else if (data) {
-        const spots: ParkingSpot[] = data.map(spot => ({
+        const spots: ParkingSpot[] = data.map((spot) => ({
           id: spot.id,
           coordinates: [spot.longitude, spot.latitude] as [number, number],
           available: spot.available,
@@ -103,40 +95,47 @@ const Index = () => {
 
     // Subscribe to real-time updates
     const channel = supabase
-      .channel('parking-spots-changes')
+      .channel("parking-spots-changes")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'parking_spots'
+          event: "*",
+          schema: "public",
+          table: "parking_spots",
         },
         (payload) => {
-          console.log('Real-time update:', payload);
-          
-          if (payload.eventType === 'INSERT') {
+          console.log("Real-time update:", payload);
+
+          if (payload.eventType === "INSERT") {
             const newSpot = payload.new as any;
-            setParkingSpots(prev => [...prev, {
-              id: newSpot.id,
-              coordinates: [newSpot.longitude, newSpot.latitude] as [number, number],
-              available: newSpot.available,
-              availableSince: newSpot.available_since ? new Date(newSpot.available_since) : undefined,
-            }]);
-          } else if (payload.eventType === 'UPDATE') {
+            setParkingSpots((prev) => [
+              ...prev,
+              {
+                id: newSpot.id,
+                coordinates: [newSpot.longitude, newSpot.latitude] as [number, number],
+                available: newSpot.available,
+                availableSince: newSpot.available_since ? new Date(newSpot.available_since) : undefined,
+              },
+            ]);
+          } else if (payload.eventType === "UPDATE") {
             const updatedSpot = payload.new as any;
-            setParkingSpots(prev => prev.map(spot => 
-              spot.id === updatedSpot.id ? {
-                id: updatedSpot.id,
-                coordinates: [updatedSpot.longitude, updatedSpot.latitude] as [number, number],
-                available: updatedSpot.available,
-                availableSince: updatedSpot.available_since ? new Date(updatedSpot.available_since) : undefined,
-              } : spot
-            ));
-          } else if (payload.eventType === 'DELETE') {
+            setParkingSpots((prev) =>
+              prev.map((spot) =>
+                spot.id === updatedSpot.id
+                  ? {
+                      id: updatedSpot.id,
+                      coordinates: [updatedSpot.longitude, updatedSpot.latitude] as [number, number],
+                      available: updatedSpot.available,
+                      availableSince: updatedSpot.available_since ? new Date(updatedSpot.available_since) : undefined,
+                    }
+                  : spot,
+              ),
+            );
+          } else if (payload.eventType === "DELETE") {
             const deletedSpot = payload.old as any;
-            setParkingSpots(prev => prev.filter(spot => spot.id !== deletedSpot.id));
+            setParkingSpots((prev) => prev.filter((spot) => spot.id !== deletedSpot.id));
           }
-        }
+        },
       )
       .subscribe();
 
@@ -147,26 +146,26 @@ const Index = () => {
 
   // Get user's actual location and center map
   useEffect(() => {
-    if ('geolocation' in navigator) {
+    if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const newLocation: [number, number] = [position.coords.longitude, position.coords.latitude];
           setCurrentLocation(newLocation);
-          
+
           if (mapInstance) {
             mapInstance.flyTo({
               center: newLocation,
               zoom: 15,
             });
           }
-          
+
           toast({
             title: "Location Found",
             description: "Using your current location to find nearby parking.",
           });
         },
         (error) => {
-          console.error('Error getting location:', error);
+          console.error("Error getting location:", error);
           toast({
             title: "Location Access Denied",
             description: "Using default location. Enable location access for better results.",
@@ -177,7 +176,7 @@ const Index = () => {
           enableHighAccuracy: true,
           timeout: 5000,
           maximumAge: 0,
-        }
+        },
       );
     } else {
       toast({
@@ -187,19 +186,19 @@ const Index = () => {
       });
     }
   }, [toast, mapInstance]);
-  
+
   const getDistanceToSpot = (spot: ParkingSpot) => {
     const distance = calculateDistance(
       currentLocation[1],
       currentLocation[0],
       spot.coordinates[1],
-      spot.coordinates[0]
+      spot.coordinates[0],
     );
     return distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance.toFixed(1)}km`;
   };
 
   const findNearestAvailableSpot = () => {
-    const availableParkingSpots = parkingSpots.filter(spot => spot.available);
+    const availableParkingSpots = parkingSpots.filter((spot) => spot.available);
     if (availableParkingSpots.length === 0) return null;
 
     let nearestSpot = availableParkingSpots[0];
@@ -207,7 +206,7 @@ const Index = () => {
       currentLocation[1],
       currentLocation[0],
       nearestSpot.coordinates[1],
-      nearestSpot.coordinates[0]
+      nearestSpot.coordinates[0],
     );
 
     for (const spot of availableParkingSpots) {
@@ -215,7 +214,7 @@ const Index = () => {
         currentLocation[1],
         currentLocation[0],
         spot.coordinates[1],
-        spot.coordinates[0]
+        spot.coordinates[0],
       );
       if (distance < minDistance) {
         minDistance = distance;
@@ -251,16 +250,16 @@ const Index = () => {
   // Timer effect
   useEffect(() => {
     if (!userParking) {
-      setTimeRemaining('');
+      setTimeRemaining("");
       return;
     }
 
     const updateTimer = () => {
       const now = new Date();
       const minutesLeft = differenceInMinutes(userParking.returnTime, now);
-      
+
       if (minutesLeft <= 0) {
-        setTimeRemaining('Time expired!');
+        setTimeRemaining("Time expired!");
         toast({
           title: "Parking Time Expired",
           description: "Your parking time has expired. Please move your vehicle.",
@@ -293,7 +292,7 @@ const Index = () => {
     if (isParked) {
       // Check if user is authenticated before allowing parking
       if (!user) {
-        setPendingAction('park');
+        setPendingAction("park");
         setShowAuthDialog(true);
         return;
       }
@@ -302,15 +301,15 @@ const Index = () => {
       if (userParking) {
         // Update spot in database to be available again
         const { error } = await supabase
-          .from('parking_spots')
-          .update({ 
-            available: true, 
-            available_since: new Date().toISOString() 
+          .from("parking_spots")
+          .update({
+            available: true,
+            available_since: new Date().toISOString(),
           })
-          .eq('id', userParking.spotId);
+          .eq("id", userParking.spotId);
 
         if (error) {
-          console.error('Error updating spot:', error);
+          console.error("Error updating spot:", error);
           toast({
             title: "Error",
             description: "Could not update parking spot.",
@@ -341,19 +340,19 @@ const Index = () => {
 
     const now = new Date();
     const returnTime = new Date(now.getTime() + duration * 60000);
-    
+
     if (selectedSpot) {
       // Taking an existing spot - update in database
       const { error } = await supabase
-        .from('parking_spots')
-        .update({ 
-          available: false, 
-          available_since: null 
+        .from("parking_spots")
+        .update({
+          available: false,
+          available_since: null,
         })
-        .eq('id', selectedSpot.id);
+        .eq("id", selectedSpot.id);
 
       if (error) {
-        console.error('Error updating spot:', error);
+        console.error("Error updating spot:", error);
         toast({
           title: "Error",
           description: "Could not take this parking spot.",
@@ -368,25 +367,23 @@ const Index = () => {
         returnTime: returnTime,
         durationMinutes: duration,
       });
-      
+
       setSelectedSpot(null);
     } else {
       // Creating a new spot at manual pin location or current location
       const spotLocation = manualPinLocation || currentLocation;
       const newSpotId = `user-${Date.now()}`;
-      
-      const { error } = await supabase
-        .from('parking_spots')
-        .insert({
-          id: newSpotId,
-          latitude: spotLocation[1],
-          longitude: spotLocation[0],
-          available: false,
-          available_since: null,
-        });
+
+      const { error } = await supabase.from("parking_spots").insert({
+        id: newSpotId,
+        latitude: spotLocation[1],
+        longitude: spotLocation[0],
+        available: false,
+        available_since: null,
+      });
 
       if (error) {
-        console.error('Error creating spot:', error);
+        console.error("Error creating spot:", error);
         toast({
           title: "Error",
           description: "Could not create parking spot.",
@@ -412,7 +409,7 @@ const Index = () => {
   };
 
   const handleSpotClick = (spotId: string) => {
-    const spot = parkingSpots.find(s => s.id === spotId);
+    const spot = parkingSpots.find((s) => s.id === spotId);
     if (spot && spot.available) {
       setSelectedSpot(spot);
     }
@@ -422,7 +419,7 @@ const Index = () => {
     if (!selectedSpot) return;
     // Check if user is authenticated before allowing to take a spot
     if (!user) {
-      setPendingAction('take');
+      setPendingAction("take");
       setShowAuthDialog(true);
       return;
     }
@@ -431,9 +428,9 @@ const Index = () => {
 
   const handleAuthSuccess = () => {
     // Execute pending action after successful auth
-    if (pendingAction === 'park') {
+    if (pendingAction === "park") {
       setShowTimerDialog(true);
-    } else if (pendingAction === 'take' && selectedSpot) {
+    } else if (pendingAction === "take" && selectedSpot) {
       setShowTimerDialog(true);
     }
     setPendingAction(null);
@@ -485,13 +482,13 @@ const Index = () => {
       </div>
 
       {/* Map */}
-      <div 
+      <div
         className="absolute inset-0 pt-28 transition-all duration-300"
-        style={{ paddingBottom: isStatsExpanded ? '16rem' : '8rem' }}
+        style={{ paddingBottom: isStatsExpanded ? "16rem" : "8rem" }}
       >
         <div className="h-full px-6 relative">
-          <Map 
-            parkingSpots={parkingSpots} 
+          <Map
+            parkingSpots={parkingSpots}
             currentLocation={currentLocation}
             onSpotClick={handleSpotClick}
             onMapReady={setMapInstance}
@@ -502,9 +499,9 @@ const Index = () => {
       </div>
 
       {/* Recenter Button - floating above bottom panel */}
-      <div 
+      <div
         className="fixed right-6 z-30 transition-all duration-300"
-        style={{ bottom: isStatsExpanded ? 'calc(16rem + 1rem)' : 'calc(8rem + 1rem)' }}
+        style={{ bottom: isStatsExpanded ? "calc(16rem + 1rem)" : "calc(8rem + 1rem)" }}
       >
         <Button
           onClick={handleRecenter}
@@ -525,10 +522,11 @@ const Index = () => {
           </DialogHeader>
           <div className="space-y-2 text-sm text-muted-foreground">
             <div>
-              <strong className="text-foreground">Distance:</strong> {selectedSpot && getDistanceToSpot(selectedSpot)} away
+              <strong className="text-foreground">Distance:</strong> {selectedSpot && getDistanceToSpot(selectedSpot)}{" "}
+              away
             </div>
             <div>
-              <strong className="text-foreground">Available for:</strong>{' '}
+              <strong className="text-foreground">Available for:</strong>{" "}
               {selectedSpot?.availableSince && formatDistanceToNow(selectedSpot.availableSince)}
             </div>
           </div>
@@ -564,7 +562,7 @@ const Index = () => {
           </div>
           <div className="flex gap-2 pt-4">
             <Button variant="outline" onClick={() => setShowTimerDialog(false)} className="flex-1">
-              Cancel
+              Set parking spot
             </Button>
             <Button onClick={handleSetParkingTimer} className="flex-1">
               Set Timer
@@ -577,19 +575,19 @@ const Index = () => {
       <div className="absolute bottom-0 left-0 right-0 z-20">
         <div className="bg-card rounded-t-[2rem] shadow-2xl border-t border-border px-6 pt-4 pb-8 pb-safe">
           {/* Toggle Arrow */}
-          <button 
+          <button
             onClick={() => setIsStatsExpanded(!isStatsExpanded)}
             className="w-full flex justify-center items-center pb-2"
             aria-label={isStatsExpanded ? "Collapse stats" : "Expand stats"}
           >
             <div className="w-12 h-1 bg-muted-foreground/30 rounded-full" />
           </button>
-          
+
           <div className="space-y-4">
             {/* Collapsible Stats Section */}
-            <div 
+            <div
               className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                isStatsExpanded ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'
+                isStatsExpanded ? "max-h-60 opacity-100" : "max-h-0 opacity-0"
               }`}
             >
               <div className="space-y-4 pb-4">
@@ -604,14 +602,18 @@ const Index = () => {
                     </div>
                   </div>
                 )}
-                <StatsCard availableSpots={availableSpots} totalUsers={activeUsers} onSpotsClick={handleFocusNearestSpot} />
+                <StatsCard
+                  availableSpots={availableSpots}
+                  totalUsers={activeUsers}
+                  onSpotsClick={handleFocusNearestSpot}
+                />
               </div>
             </div>
-            
+
             {/* Expand/Collapse Button with Chevron and Mini Preview */}
             <div className="w-full flex items-center justify-center gap-3 py-1">
               {isStatsExpanded ? (
-                <button 
+                <button
                   onClick={() => setIsStatsExpanded(false)}
                   className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
                 >
@@ -619,16 +621,18 @@ const Index = () => {
                   <span className="text-sm">Hide stats</span>
                 </button>
               ) : (
-                <button 
+                <button
                   onClick={handleFocusNearestSpot}
                   className="flex items-center justify-center gap-2 bg-primary/10 px-3 py-1.5 rounded-full hover:bg-primary/20 transition-colors active:scale-95"
                 >
                   <div className="w-2 h-2 shrink-0 rounded-full bg-primary animate-pulse" />
-                  <span className="text-sm font-medium text-primary leading-none">{availableSpots} spots available</span>
+                  <span className="text-sm font-medium text-primary leading-none">
+                    {availableSpots} spots available
+                  </span>
                 </button>
               )}
             </div>
-            
+
             {/* Always visible parking button */}
             <ParkingButton onToggle={handleParkingToggle} isParked={!!userParking} />
           </div>
@@ -636,11 +640,7 @@ const Index = () => {
       </div>
 
       {/* Auth Dialog */}
-      <AuthDialog 
-        open={showAuthDialog} 
-        onOpenChange={setShowAuthDialog}
-        onSuccess={handleAuthSuccess}
-      />
+      <AuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} onSuccess={handleAuthSuccess} />
     </div>
   );
 };
