@@ -553,10 +553,10 @@ const Index = () => {
               </div>
             </div>
             
-            {/* Expand/Collapse Button with Chevron */}
+            {/* Expand/Collapse Button with Chevron and Mini Preview */}
             <button 
               onClick={() => setIsStatsExpanded(!isStatsExpanded)}
-              className="w-full flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground transition-colors py-1"
+              className="w-full flex items-center justify-center gap-3 text-muted-foreground hover:text-foreground transition-colors py-1"
             >
               {isStatsExpanded ? (
                 <>
@@ -565,8 +565,11 @@ const Index = () => {
                 </>
               ) : (
                 <>
+                  <div className="flex items-center gap-2 bg-primary/10 px-3 py-1 rounded-full">
+                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                    <span className="text-sm font-medium text-primary">{availableSpots} spots available</span>
+                  </div>
                   <ChevronUp className="h-4 w-4" />
-                  <span className="text-sm">Show stats</span>
                 </>
               )}
             </button>
