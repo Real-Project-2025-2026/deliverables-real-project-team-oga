@@ -14,23 +14,22 @@ import { formatDistanceToNow, differenceInMinutes } from "date-fns";
 import { calculateDistance } from "@/lib/utils";
 import { Clock, Locate, LogOut, ChevronUp, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-
 interface ParkingSpot {
   id: string;
   coordinates: [number, number];
   available: boolean;
   availableSince?: Date;
 }
-
 interface UserParking {
   spotId: string;
   parkingTime: Date;
   returnTime: Date;
   durationMinutes: number;
 }
-
 const Index = () => {
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const activeUsers = usePresence();
   const [currentLocation, setCurrentLocation] = useState<[number, number]>([11.58, 48.155]);
   const [parkingSpots, setParkingSpots] = useState<ParkingSpot[]>([]);
@@ -51,94 +50,80 @@ const Index = () => {
   // Auth state management
   useEffect(() => {
     const {
-      data: { subscription },
+      data: {
+        subscription
+      }
     } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
     });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({
+      data: {
+        session
+      }
+    }) => {
       setSession(session);
       setUser(session?.user ?? null);
     });
-
     return () => subscription.unsubscribe();
   }, []);
-
-  const availableSpots = parkingSpots.filter((spot) => spot.available).length;
+  const availableSpots = parkingSpots.filter(spot => spot.available).length;
 
   // Fetch parking spots from database
   useEffect(() => {
     const fetchParkingSpots = async () => {
-      const { data, error } = await supabase.from("parking_spots").select("*");
-
+      const {
+        data,
+        error
+      } = await supabase.from("parking_spots").select("*");
       if (error) {
         console.error("Error fetching parking spots:", error);
         toast({
           title: "Error Loading Spots",
           description: "Could not load parking spots from the database.",
-          variant: "destructive",
+          variant: "destructive"
         });
       } else if (data) {
-        const spots: ParkingSpot[] = data.map((spot) => ({
+        const spots: ParkingSpot[] = data.map(spot => ({
           id: spot.id,
           coordinates: [spot.longitude, spot.latitude] as [number, number],
           available: spot.available,
-          availableSince: spot.available_since ? new Date(spot.available_since) : undefined,
+          availableSince: spot.available_since ? new Date(spot.available_since) : undefined
         }));
         setParkingSpots(spots);
       }
       setIsLoading(false);
     };
-
     fetchParkingSpots();
 
     // Subscribe to real-time updates
-    const channel = supabase
-      .channel("parking-spots-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "parking_spots",
-        },
-        (payload) => {
-          console.log("Real-time update:", payload);
-
-          if (payload.eventType === "INSERT") {
-            const newSpot = payload.new as any;
-            setParkingSpots((prev) => [
-              ...prev,
-              {
-                id: newSpot.id,
-                coordinates: [newSpot.longitude, newSpot.latitude] as [number, number],
-                available: newSpot.available,
-                availableSince: newSpot.available_since ? new Date(newSpot.available_since) : undefined,
-              },
-            ]);
-          } else if (payload.eventType === "UPDATE") {
-            const updatedSpot = payload.new as any;
-            setParkingSpots((prev) =>
-              prev.map((spot) =>
-                spot.id === updatedSpot.id
-                  ? {
-                      id: updatedSpot.id,
-                      coordinates: [updatedSpot.longitude, updatedSpot.latitude] as [number, number],
-                      available: updatedSpot.available,
-                      availableSince: updatedSpot.available_since ? new Date(updatedSpot.available_since) : undefined,
-                    }
-                  : spot,
-              ),
-            );
-          } else if (payload.eventType === "DELETE") {
-            const deletedSpot = payload.old as any;
-            setParkingSpots((prev) => prev.filter((spot) => spot.id !== deletedSpot.id));
-          }
-        },
-      )
-      .subscribe();
-
+    const channel = supabase.channel("parking-spots-changes").on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "parking_spots"
+    }, payload => {
+      console.log("Real-time update:", payload);
+      if (payload.eventType === "INSERT") {
+        const newSpot = payload.new as any;
+        setParkingSpots(prev => [...prev, {
+          id: newSpot.id,
+          coordinates: [newSpot.longitude, newSpot.latitude] as [number, number],
+          available: newSpot.available,
+          availableSince: newSpot.available_since ? new Date(newSpot.available_since) : undefined
+        }]);
+      } else if (payload.eventType === "UPDATE") {
+        const updatedSpot = payload.new as any;
+        setParkingSpots(prev => prev.map(spot => spot.id === updatedSpot.id ? {
+          id: updatedSpot.id,
+          coordinates: [updatedSpot.longitude, updatedSpot.latitude] as [number, number],
+          available: updatedSpot.available,
+          availableSince: updatedSpot.available_since ? new Date(updatedSpot.available_since) : undefined
+        } : spot));
+      } else if (payload.eventType === "DELETE") {
+        const deletedSpot = payload.old as any;
+        setParkingSpots(prev => prev.filter(spot => spot.id !== deletedSpot.id));
+      }
+    }).subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
@@ -147,102 +132,75 @@ const Index = () => {
   // Get user's actual location and center map
   useEffect(() => {
     if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const newLocation: [number, number] = [position.coords.longitude, position.coords.latitude];
-          setCurrentLocation(newLocation);
-
-          if (mapInstance) {
-            mapInstance.flyTo({
-              center: newLocation,
-              zoom: 15,
-            });
-          }
-
-          toast({
-            title: "Location Found",
-            description: "Using your current location to find nearby parking.",
+      navigator.geolocation.getCurrentPosition(position => {
+        const newLocation: [number, number] = [position.coords.longitude, position.coords.latitude];
+        setCurrentLocation(newLocation);
+        if (mapInstance) {
+          mapInstance.flyTo({
+            center: newLocation,
+            zoom: 15
           });
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-          toast({
-            title: "Location Access Denied",
-            description: "Using default location. Enable location access for better results.",
-            variant: "destructive",
-          });
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 5000,
-          maximumAge: 0,
-        },
-      );
+        }
+        toast({
+          title: "Location Found",
+          description: "Using your current location to find nearby parking."
+        });
+      }, error => {
+        console.error("Error getting location:", error);
+        toast({
+          title: "Location Access Denied",
+          description: "Using default location. Enable location access for better results.",
+          variant: "destructive"
+        });
+      }, {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+      });
     } else {
       toast({
         title: "Location Not Supported",
         description: "Your browser doesn't support geolocation.",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   }, [toast, mapInstance]);
-
   const getDistanceToSpot = (spot: ParkingSpot) => {
-    const distance = calculateDistance(
-      currentLocation[1],
-      currentLocation[0],
-      spot.coordinates[1],
-      spot.coordinates[0],
-    );
+    const distance = calculateDistance(currentLocation[1], currentLocation[0], spot.coordinates[1], spot.coordinates[0]);
     return distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance.toFixed(1)}km`;
   };
-
   const findNearestAvailableSpot = () => {
-    const availableParkingSpots = parkingSpots.filter((spot) => spot.available);
+    const availableParkingSpots = parkingSpots.filter(spot => spot.available);
     if (availableParkingSpots.length === 0) return null;
-
     let nearestSpot = availableParkingSpots[0];
-    let minDistance = calculateDistance(
-      currentLocation[1],
-      currentLocation[0],
-      nearestSpot.coordinates[1],
-      nearestSpot.coordinates[0],
-    );
-
+    let minDistance = calculateDistance(currentLocation[1], currentLocation[0], nearestSpot.coordinates[1], nearestSpot.coordinates[0]);
     for (const spot of availableParkingSpots) {
-      const distance = calculateDistance(
-        currentLocation[1],
-        currentLocation[0],
-        spot.coordinates[1],
-        spot.coordinates[0],
-      );
+      const distance = calculateDistance(currentLocation[1], currentLocation[0], spot.coordinates[1], spot.coordinates[0]);
       if (distance < minDistance) {
         minDistance = distance;
         nearestSpot = spot;
       }
     }
-
     return nearestSpot;
   };
-
   const handleFocusNearestSpot = () => {
     const nearestSpot = findNearestAvailableSpot();
     if (nearestSpot && mapInstance) {
       mapInstance.flyTo({
         center: nearestSpot.coordinates,
         zoom: 17,
-        duration: 1000,
+        duration: 1000
       });
       setSelectedSpot(nearestSpot);
       toast({
         title: "Nearest Spot",
-        description: `Found parking ${getDistanceToSpot(nearestSpot)} away`,
+        description: `Found parking ${getDistanceToSpot(nearestSpot)} away`
       });
     } else if (!nearestSpot) {
       toast({
         title: "No Spots Available",
         description: "There are no available parking spots nearby.",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
@@ -253,24 +211,22 @@ const Index = () => {
       setTimeRemaining("");
       return;
     }
-
     const updateTimer = () => {
       const now = new Date();
       const minutesLeft = differenceInMinutes(userParking.returnTime, now);
-
       if (minutesLeft <= 0) {
         setTimeRemaining("Time expired!");
         toast({
           title: "Parking Time Expired",
           description: "Your parking time has expired. Please move your vehicle.",
-          variant: "destructive",
+          variant: "destructive"
         });
       } else if (minutesLeft <= 5 && minutesLeft > 0) {
         setTimeRemaining(`${minutesLeft} min left`);
         if (minutesLeft === 5) {
           toast({
             title: "Parking Time Alert",
-            description: "Only 5 minutes left on your parking!",
+            description: "Only 5 minutes left on your parking!"
           });
         }
       } else if (minutesLeft < 60) {
@@ -281,13 +237,10 @@ const Index = () => {
         setTimeRemaining(`${hours}h ${mins}m left`);
       }
     };
-
     updateTimer();
     const interval = setInterval(updateTimer, 30000);
-
     return () => clearInterval(interval);
   }, [userParking, toast]);
-
   const handleParkingToggle = async (isParked: boolean) => {
     if (isParked) {
       // Check if user is authenticated before allowing parking
@@ -300,121 +253,107 @@ const Index = () => {
     } else {
       if (userParking) {
         // Update spot in database to be available again
-        const { error } = await supabase
-          .from("parking_spots")
-          .update({
-            available: true,
-            available_since: new Date().toISOString(),
-          })
-          .eq("id", userParking.spotId);
-
+        const {
+          error
+        } = await supabase.from("parking_spots").update({
+          available: true,
+          available_since: new Date().toISOString()
+        }).eq("id", userParking.spotId);
         if (error) {
           console.error("Error updating spot:", error);
           toast({
             title: "Error",
             description: "Could not update parking spot.",
-            variant: "destructive",
+            variant: "destructive"
           });
           return;
         }
-
         setUserParking(null);
         toast({
           title: "Thanks for Sharing!",
-          description: "Your spot is now available for others.",
+          description: "Your spot is now available for others."
         });
       }
     }
   };
-
   const handleSetParkingTimer = async () => {
     const duration = parseInt(parkingDuration);
     if (isNaN(duration) || duration <= 0) {
       toast({
         title: "Invalid Duration",
         description: "Please enter a valid number of minutes.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     const now = new Date();
     const returnTime = new Date(now.getTime() + duration * 60000);
-
     if (selectedSpot) {
       // Taking an existing spot - update in database
-      const { error } = await supabase
-        .from("parking_spots")
-        .update({
-          available: false,
-          available_since: null,
-        })
-        .eq("id", selectedSpot.id);
-
+      const {
+        error
+      } = await supabase.from("parking_spots").update({
+        available: false,
+        available_since: null
+      }).eq("id", selectedSpot.id);
       if (error) {
         console.error("Error updating spot:", error);
         toast({
           title: "Error",
           description: "Could not take this parking spot.",
-          variant: "destructive",
+          variant: "destructive"
         });
         return;
       }
-
       setUserParking({
         spotId: selectedSpot.id,
         parkingTime: now,
         returnTime: returnTime,
-        durationMinutes: duration,
+        durationMinutes: duration
       });
-
       setSelectedSpot(null);
     } else {
       // Creating a new spot at manual pin location or current location
       const spotLocation = manualPinLocation || currentLocation;
       const newSpotId = `user-${Date.now()}`;
-
-      const { error } = await supabase.from("parking_spots").insert({
+      const {
+        error
+      } = await supabase.from("parking_spots").insert({
         id: newSpotId,
         latitude: spotLocation[1],
         longitude: spotLocation[0],
         available: false,
-        available_since: null,
+        available_since: null
       });
-
       if (error) {
         console.error("Error creating spot:", error);
         toast({
           title: "Error",
           description: "Could not create parking spot.",
-          variant: "destructive",
+          variant: "destructive"
         });
         return;
       }
-
       setUserParking({
         spotId: newSpotId,
         parkingTime: now,
         returnTime: returnTime,
-        durationMinutes: duration,
+        durationMinutes: duration
       });
     }
-
     setShowTimerDialog(false);
     setManualPinLocation(null);
     toast({
       title: "Parking Timer Set",
-      description: `You'll be reminded in ${duration} minutes.`,
+      description: `You'll be reminded in ${duration} minutes.`
     });
   };
-
   const handleSpotClick = (spotId: string) => {
-    const spot = parkingSpots.find((s) => s.id === spotId);
+    const spot = parkingSpots.find(s => s.id === spotId);
     if (spot && spot.available) {
       setSelectedSpot(spot);
     }
   };
-
   const handleTakeSpot = () => {
     if (!selectedSpot) return;
     // Check if user is authenticated before allowing to take a spot
@@ -425,7 +364,6 @@ const Index = () => {
     }
     setShowTimerDialog(true);
   };
-
   const handleAuthSuccess = () => {
     // Execute pending action after successful auth
     if (pendingAction === "park") {
@@ -435,32 +373,28 @@ const Index = () => {
     }
     setPendingAction(null);
   };
-
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setUserParking(null);
     toast({
       title: "Signed Out",
-      description: "You've been signed out successfully.",
+      description: "You've been signed out successfully."
     });
   };
-
   const handleRecenter = () => {
     if (mapInstance && currentLocation) {
       mapInstance.flyTo({
         center: currentLocation,
         zoom: 15,
-        duration: 1000,
+        duration: 1000
       });
       toast({
         title: "Map Recentered",
-        description: "Centered on your current location.",
+        description: "Centered on your current location."
       });
     }
   };
-
-  return (
-    <div className="h-[100dvh] w-full bg-background overflow-hidden">
+  return <div className="h-[100dvh] w-full bg-background overflow-hidden">
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-10 pt-safe">
         <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 flex items-start justify-between">
@@ -468,54 +402,35 @@ const Index = () => {
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground">OGAP</h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Find & Share Free Parking</p>
           </div>
-          {user ? (
-            <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-2 touch-target">
+          {user ? <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-2 touch-target">
               <LogOut className="h-4 w-4" />
               <span className="hidden sm:inline">Sign Out</span>
-            </Button>
-          ) : (
-            <Button variant="outline" size="sm" onClick={() => setShowAuthDialog(true)} className="touch-target">
+            </Button> : <Button variant="outline" size="sm" onClick={() => setShowAuthDialog(true)} className="touch-target">
               Sign In
-            </Button>
-          )}
+            </Button>}
         </div>
       </div>
 
       {/* Map */}
-      <div
-        className="absolute inset-0 pt-20 sm:pt-28 transition-all duration-300"
-        style={{ paddingBottom: isStatsExpanded ? "14rem" : "7rem" }}
-      >
+      <div className="absolute inset-0 pt-20 sm:pt-28 transition-all duration-300" style={{
+      paddingBottom: isStatsExpanded ? "14rem" : "7rem"
+    }}>
         <div className="h-full px-3 sm:px-6 relative">
-          <Map
-            parkingSpots={parkingSpots}
-            currentLocation={currentLocation}
-            onSpotClick={handleSpotClick}
-            onMapReady={setMapInstance}
-            manualPinLocation={manualPinLocation}
-            onManualPinMove={setManualPinLocation}
-          />
+          <Map parkingSpots={parkingSpots} currentLocation={currentLocation} onSpotClick={handleSpotClick} onMapReady={setMapInstance} manualPinLocation={manualPinLocation} onManualPinMove={setManualPinLocation} />
         </div>
       </div>
 
       {/* Recenter Button - floating above bottom panel */}
-      <div
-        className="fixed right-3 sm:right-6 z-30 transition-all duration-300"
-        style={{ bottom: isStatsExpanded ? "calc(14rem + 0.5rem)" : "calc(7rem + 0.5rem)" }}
-      >
-        <Button
-          onClick={handleRecenter}
-          size="icon"
-          variant="outline"
-          className="group h-12 w-12 rounded-full shadow-lg bg-card hover:bg-primary active:scale-95 touch-target"
-          aria-label="Recenter map on my location"
-        >
+      <div className="fixed right-3 sm:right-6 z-30 transition-all duration-300" style={{
+      bottom: isStatsExpanded ? "calc(14rem + 0.5rem)" : "calc(7rem + 0.5rem)"
+    }}>
+        <Button onClick={handleRecenter} size="icon" variant="outline" className="group h-12 w-12 rounded-full shadow-lg bg-card hover:bg-primary active:scale-95 touch-target" aria-label="Recenter map on my location">
           <Locate className="h-5 w-5 text-primary group-hover:text-white transition-colors" />
         </Button>
       </div>
 
       {/* Spot Details Dialog */}
-      <Dialog open={!!selectedSpot} onOpenChange={(open) => !open && setSelectedSpot(null)}>
+      <Dialog open={!!selectedSpot} onOpenChange={open => !open && setSelectedSpot(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Parking Spot Available</DialogTitle>
@@ -547,14 +462,7 @@ const Index = () => {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="duration">How long will you park? (minutes)</Label>
-              <Input
-                id="duration"
-                type="number"
-                value={parkingDuration}
-                onChange={(e) => setParkingDuration(e.target.value)}
-                placeholder="60"
-                min="1"
-              />
+              <Input id="duration" type="number" value={parkingDuration} onChange={e => setParkingDuration(e.target.value)} placeholder="60" min="1" />
             </div>
             <div className="text-sm text-muted-foreground">
               You'll receive a notification 5 minutes before your time expires.
@@ -573,26 +481,17 @@ const Index = () => {
 
       {/* Bottom Card */}
       <div className="absolute bottom-0 left-0 right-0 z-20">
-        <div className="bg-card rounded-t-[1.5rem] sm:rounded-t-[2rem] shadow-2xl border-t border-border px-4 sm:px-6 pt-3 pb-6 pb-safe">
+        <div className="bg-card rounded-t-[1.5rem] sm:rounded-t-[2rem] shadow-2xl border-t border-border px-4 sm:px-6 pt-3 pb-6 pb-safe py-[24px]">
           {/* Drag handle */}
-          <button
-            onClick={() => setIsStatsExpanded(!isStatsExpanded)}
-            className="w-full flex justify-center items-center pb-2 touch-target"
-            aria-label={isStatsExpanded ? "Collapse stats" : "Expand stats"}
-          >
+          <button onClick={() => setIsStatsExpanded(!isStatsExpanded)} className="w-full flex justify-center items-center pb-2 touch-target" aria-label={isStatsExpanded ? "Collapse stats" : "Expand stats"}>
             <div className="w-10 h-1 bg-muted-foreground/30 rounded-full" />
           </button>
 
           <div className="space-y-3">
             {/* Collapsible Stats Section */}
-            <div
-              className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                isStatsExpanded ? "max-h-60 opacity-100" : "max-h-0 opacity-0"
-              }`}
-            >
+            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isStatsExpanded ? "max-h-60 opacity-100" : "max-h-0 opacity-0"}`}>
               <div className="space-y-3 pb-3">
-                {userParking && timeRemaining && (
-                  <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 sm:p-4 flex items-center gap-3">
+                {userParking && timeRemaining && <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 sm:p-4 flex items-center gap-3">
                     <div className="bg-primary/20 p-2 rounded-full shrink-0">
                       <Clock className="h-5 w-5 text-primary" />
                     </div>
@@ -600,37 +499,22 @@ const Index = () => {
                       <p className="text-sm font-medium text-foreground">Parking Timer</p>
                       <p className="text-lg font-bold text-primary truncate">{timeRemaining}</p>
                     </div>
-                  </div>
-                )}
-                <StatsCard
-                  availableSpots={availableSpots}
-                  totalUsers={activeUsers}
-                  onSpotsClick={handleFocusNearestSpot}
-                />
+                  </div>}
+                <StatsCard availableSpots={availableSpots} totalUsers={activeUsers} onSpotsClick={handleFocusNearestSpot} />
               </div>
             </div>
 
             {/* Expand/Collapse Button with Mini Preview */}
             <div className="w-full flex items-center justify-center gap-3 py-1">
-              {isStatsExpanded ? (
-                <button
-                  onClick={() => setIsStatsExpanded(false)}
-                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors touch-target active:scale-95"
-                >
+              {isStatsExpanded ? <button onClick={() => setIsStatsExpanded(false)} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors touch-target active:scale-95">
                   <ChevronDown className="h-4 w-4" />
                   <span className="text-sm">Hide stats</span>
-                </button>
-              ) : (
-                <button
-                  onClick={handleFocusNearestSpot}
-                  className="flex items-center justify-center gap-2 bg-primary/10 px-4 py-2 rounded-full hover:bg-primary/20 transition-colors active:scale-95 touch-target"
-                >
+                </button> : <button onClick={handleFocusNearestSpot} className="flex items-center justify-center gap-2 bg-primary/10 px-4 py-2 rounded-full hover:bg-primary/20 transition-colors active:scale-95 touch-target">
                   <div className="w-2 h-2 shrink-0 rounded-full bg-primary animate-pulse" />
                   <span className="text-sm font-medium text-primary leading-none">
                     {availableSpots} spots available
                   </span>
-                </button>
-              )}
+                </button>}
             </div>
 
             {/* Always visible parking button */}
@@ -641,8 +525,6 @@ const Index = () => {
 
       {/* Auth Dialog */}
       <AuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} onSuccess={handleAuthSuccess} />
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
