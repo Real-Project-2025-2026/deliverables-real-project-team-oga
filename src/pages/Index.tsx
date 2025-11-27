@@ -562,7 +562,7 @@ const Index = () => {
           </div>
           <div className="flex gap-2 pt-4">
             <Button variant="outline" onClick={() => setShowTimerDialog(false)} className="flex-1">
-              Set parking spot
+              Take parking spot
             </Button>
             <Button onClick={handleSetParkingTimer} className="flex-1">
               Set Timer
