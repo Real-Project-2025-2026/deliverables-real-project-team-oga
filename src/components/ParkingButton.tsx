@@ -21,26 +21,27 @@ const ParkingButton = ({ onToggle, isParked = false }: ParkingButtonProps) => {
     <button
       onClick={handleToggle}
       className={`
-        relative w-full h-20 rounded-3xl font-semibold text-lg
+        relative w-full min-h-[56px] rounded-2xl font-semibold text-base
         transition-all duration-300 ease-out
-        active:scale-95
+        active:scale-[0.98]
         shadow-lg
+        touch-target
         ${isParked 
           ? 'bg-success text-white' 
           : 'bg-primary text-primary-foreground'
         }
-        ${isAnimating ? 'scale-95' : ''}
+        ${isAnimating ? 'scale-[0.98]' : ''}
       `}
     >
-      <div className="flex items-center justify-center gap-3">
+      <div className="flex items-center justify-center gap-3 py-4 px-6">
         {isParked ? (
           <>
-            <Navigation className="w-6 h-6" />
+            <Navigation className="w-5 h-5 shrink-0" />
             <span>I'm Leaving</span>
           </>
         ) : (
           <>
-            <MapPin className="w-6 h-6" />
+            <MapPin className="w-5 h-5 shrink-0" />
             <span>I'm Parking Here</span>
           </>
         )}

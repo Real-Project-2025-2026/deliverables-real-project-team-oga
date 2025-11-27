@@ -460,21 +460,21 @@ const Index = () => {
   };
 
   return (
-    <div className="h-screen w-full bg-background overflow-hidden">
+    <div className="h-[100dvh] w-full bg-background overflow-hidden">
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-10 pt-safe">
-        <div className="px-6 pt-6 pb-4 flex items-start justify-between">
+        <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 flex items-start justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">OGAP</h1>
-            <p className="text-sm text-muted-foreground mt-1">Find & Share Free Parking</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">OGAP</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Find & Share Free Parking</p>
           </div>
           {user ? (
-            <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-2">
+            <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-2 touch-target">
               <LogOut className="h-4 w-4" />
-              Sign Out
+              <span className="hidden sm:inline">Sign Out</span>
             </Button>
           ) : (
-            <Button variant="outline" size="sm" onClick={() => setShowAuthDialog(true)}>
+            <Button variant="outline" size="sm" onClick={() => setShowAuthDialog(true)} className="touch-target">
               Sign In
             </Button>
           )}
@@ -483,10 +483,10 @@ const Index = () => {
 
       {/* Map */}
       <div
-        className="absolute inset-0 pt-28 transition-all duration-300"
-        style={{ paddingBottom: isStatsExpanded ? "16rem" : "8rem" }}
+        className="absolute inset-0 pt-20 sm:pt-28 transition-all duration-300"
+        style={{ paddingBottom: isStatsExpanded ? "14rem" : "7rem" }}
       >
-        <div className="h-full px-6 relative">
+        <div className="h-full px-3 sm:px-6 relative">
           <Map
             parkingSpots={parkingSpots}
             currentLocation={currentLocation}
@@ -500,14 +500,14 @@ const Index = () => {
 
       {/* Recenter Button - floating above bottom panel */}
       <div
-        className="fixed right-6 z-30 transition-all duration-300"
-        style={{ bottom: isStatsExpanded ? "calc(16rem + 0.5rem)" : "calc(8rem + 0.5rem)" }}
+        className="fixed right-3 sm:right-6 z-30 transition-all duration-300"
+        style={{ bottom: isStatsExpanded ? "calc(14rem + 0.5rem)" : "calc(7rem + 0.5rem)" }}
       >
         <Button
           onClick={handleRecenter}
           size="icon"
           variant="outline"
-          className="group h-12 w-12 rounded-full shadow-lg bg-card hover:bg-primary"
+          className="group h-12 w-12 rounded-full shadow-lg bg-card hover:bg-primary active:scale-95 touch-target"
           aria-label="Recenter map on my location"
         >
           <Locate className="h-5 w-5 text-primary group-hover:text-white transition-colors" />
@@ -573,32 +573,32 @@ const Index = () => {
 
       {/* Bottom Card */}
       <div className="absolute bottom-0 left-0 right-0 z-20">
-        <div className="bg-card rounded-t-[2rem] shadow-2xl border-t border-border px-6 pt-4 pb-8 pb-safe">
-          {/* Toggle Arrow */}
+        <div className="bg-card rounded-t-[1.5rem] sm:rounded-t-[2rem] shadow-2xl border-t border-border px-4 sm:px-6 pt-3 pb-6 pb-safe">
+          {/* Drag handle */}
           <button
             onClick={() => setIsStatsExpanded(!isStatsExpanded)}
-            className="w-full flex justify-center items-center pb-2"
+            className="w-full flex justify-center items-center pb-2 touch-target"
             aria-label={isStatsExpanded ? "Collapse stats" : "Expand stats"}
           >
-            <div className="w-12 h-1 bg-muted-foreground/30 rounded-full" />
+            <div className="w-10 h-1 bg-muted-foreground/30 rounded-full" />
           </button>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Collapsible Stats Section */}
             <div
               className={`overflow-hidden transition-all duration-300 ease-in-out ${
                 isStatsExpanded ? "max-h-60 opacity-100" : "max-h-0 opacity-0"
               }`}
             >
-              <div className="space-y-4 pb-4">
+              <div className="space-y-3 pb-3">
                 {userParking && timeRemaining && (
-                  <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4 flex items-center gap-3">
-                    <div className="bg-primary/20 p-2 rounded-full">
+                  <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 sm:p-4 flex items-center gap-3">
+                    <div className="bg-primary/20 p-2 rounded-full shrink-0">
                       <Clock className="h-5 w-5 text-primary" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground">Parking Timer</p>
-                      <p className="text-lg font-bold text-primary">{timeRemaining}</p>
+                      <p className="text-lg font-bold text-primary truncate">{timeRemaining}</p>
                     </div>
                   </div>
                 )}
@@ -610,12 +610,12 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Expand/Collapse Button with Chevron and Mini Preview */}
+            {/* Expand/Collapse Button with Mini Preview */}
             <div className="w-full flex items-center justify-center gap-3 py-1">
               {isStatsExpanded ? (
                 <button
                   onClick={() => setIsStatsExpanded(false)}
-                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors touch-target active:scale-95"
                 >
                   <ChevronDown className="h-4 w-4" />
                   <span className="text-sm">Hide stats</span>
@@ -623,7 +623,7 @@ const Index = () => {
               ) : (
                 <button
                   onClick={handleFocusNearestSpot}
-                  className="flex items-center justify-center gap-2 bg-primary/10 px-3 py-1.5 rounded-full hover:bg-primary/20 transition-colors active:scale-95"
+                  className="flex items-center justify-center gap-2 bg-primary/10 px-4 py-2 rounded-full hover:bg-primary/20 transition-colors active:scale-95 touch-target"
                 >
                   <div className="w-2 h-2 shrink-0 rounded-full bg-primary animate-pulse" />
                   <span className="text-sm font-medium text-primary leading-none">
