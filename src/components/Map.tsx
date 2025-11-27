@@ -29,7 +29,7 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
     if (!mapContainer.current) return;
 
     // Initialize map
-    mapboxgl.accessToken = 'pk.eyJ1IjoiZmVsaXhrbGluZ2UiLCJhIjoiY21oeGJhbzdoMDByeDJscXdjbnowa3Z1bSJ9.l2qql7XrdECiyVr-aqgfSQ';
+    mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || '';
     
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
