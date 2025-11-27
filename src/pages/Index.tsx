@@ -481,7 +481,7 @@ const Index = () => {
 
       {/* Bottom Card */}
       <div className="absolute bottom-0 left-0 right-0 z-20">
-        <div className="bg-card rounded-t-[1.5rem] sm:rounded-t-[2rem] shadow-2xl border-t border-border px-4 sm:px-6 pb-6 pb-safe py-[24px] pt-0">
+        <div className="bg-card rounded-t-[1.5rem] sm:rounded-t-[2rem] shadow-2xl border-t border-border px-4 sm:px-6 pb-safe py-[24px] pt-0 pb-[24px]">
           {/* Drag handle */}
           <button onClick={() => setIsStatsExpanded(!isStatsExpanded)} className="w-full flex justify-center items-center pb-2 touch-target" aria-label={isStatsExpanded ? "Collapse stats" : "Expand stats"}>
             <div className="w-10 h-1 bg-muted-foreground/30 rounded-full" />
