@@ -498,19 +498,19 @@ const Index = () => {
             manualPinLocation={manualPinLocation}
             onManualPinMove={setManualPinLocation}
           />
-          
-          {/* Recenter Button */}
-          <Button
-            onClick={handleRecenter}
-            size="icon"
-            className="absolute right-4 z-10 h-12 w-12 rounded-full shadow-lg transition-all duration-300"
-            style={{ bottom: '1rem' }}
-            aria-label="Recenter map on my location"
-          >
-            <Locate className="h-5 w-5" />
-          </Button>
         </div>
       </div>
+
+      {/* Recenter Button - floating above bottom panel */}
+      <Button
+        onClick={handleRecenter}
+        size="icon"
+        className="fixed right-8 z-20 h-12 w-12 rounded-full shadow-lg bg-card border border-border hover:bg-accent transition-all duration-300"
+        style={{ bottom: isStatsExpanded ? '18rem' : '10rem' }}
+        aria-label="Recenter map on my location"
+      >
+        <Locate className="h-5 w-5 text-primary" />
+      </Button>
 
       {/* Spot Details Dialog */}
       <Dialog open={!!selectedSpot} onOpenChange={(open) => !open && setSelectedSpot(null)}>
