@@ -3,12 +3,16 @@ import { MapPin, Users } from 'lucide-react';
 interface StatsCardProps {
   availableSpots: number;
   totalUsers: number;
+  onSpotsClick?: () => void;
 }
 
-const StatsCard = ({ availableSpots, totalUsers }: StatsCardProps) => {
+const StatsCard = ({ availableSpots, totalUsers, onSpotsClick }: StatsCardProps) => {
   return (
     <div className="grid grid-cols-2 gap-3">
-      <div className="bg-card rounded-2xl p-4 shadow-sm border border-border">
+      <button 
+        onClick={onSpotsClick}
+        className="bg-card rounded-2xl p-4 shadow-sm border border-border text-left hover:bg-accent/50 transition-colors active:scale-95"
+      >
         <div className="flex items-center gap-2 mb-1">
           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
             <MapPin className="w-4 h-4 text-primary" />
@@ -16,7 +20,7 @@ const StatsCard = ({ availableSpots, totalUsers }: StatsCardProps) => {
         </div>
         <div className="text-2xl font-bold text-foreground">{availableSpots}</div>
         <div className="text-sm text-muted-foreground">Available Spots</div>
-      </div>
+      </button>
       
       <div className="bg-card rounded-2xl p-4 shadow-sm border border-border">
         <div className="flex items-center gap-2 mb-1">

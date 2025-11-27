@@ -599,7 +599,7 @@ const Index = () => {
                     </div>
                   </div>
                 )}
-                <StatsCard availableSpots={availableSpots} totalUsers={activeUsers} />
+                <StatsCard availableSpots={availableSpots} totalUsers={activeUsers} onSpotsClick={handleFocusNearestSpot} />
               </div>
             </div>
             
