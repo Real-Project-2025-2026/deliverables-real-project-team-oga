@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDistanceToNow, differenceInMinutes } from 'date-fns';
 import { calculateDistance } from '@/lib/utils';
-import { Clock, Locate, LogOut } from 'lucide-react';
+import { Clock, Locate, LogOut, ChevronUp, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ParkingSpot {
@@ -52,6 +52,7 @@ const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [pendingAction, setPendingAction] = useState<'park' | 'take' | null>(null);
+  const [isStatsExpanded, setIsStatsExpanded] = useState(false);
 
   // Auth state management
   useEffect(() => {
@@ -434,7 +435,10 @@ const Index = () => {
       </div>
 
       {/* Map */}
-      <div className="absolute inset-0 pt-28 pb-64">
+      <div 
+        className="absolute inset-0 pt-28 transition-all duration-300"
+        style={{ paddingBottom: isStatsExpanded ? '16rem' : '8rem' }}
+      >
         <div className="h-full px-6 relative">
           <Map 
             parkingSpots={parkingSpots} 
@@ -449,7 +453,8 @@ const Index = () => {
           <Button
             onClick={handleRecenter}
             size="icon"
-            className="absolute bottom-20 right-4 z-10 h-12 w-12 rounded-full shadow-lg"
+            className="absolute right-4 z-10 h-12 w-12 rounded-full shadow-lg transition-all duration-300"
+            style={{ bottom: '1rem' }}
             aria-label="Recenter map on my location"
           >
             <Locate className="h-5 w-5" />
@@ -515,20 +520,58 @@ const Index = () => {
 
       {/* Bottom Card */}
       <div className="absolute bottom-0 left-0 right-0 z-20">
-        <div className="bg-card rounded-t-[2rem] shadow-2xl border-t border-border px-6 pt-6 pb-8 pb-safe">
+        <div className="bg-card rounded-t-[2rem] shadow-2xl border-t border-border px-6 pt-4 pb-8 pb-safe">
+          {/* Toggle Arrow */}
+          <button 
+            onClick={() => setIsStatsExpanded(!isStatsExpanded)}
+            className="w-full flex justify-center items-center pb-2"
+            aria-label={isStatsExpanded ? "Collapse stats" : "Expand stats"}
+          >
+            <div className="w-12 h-1 bg-muted-foreground/30 rounded-full" />
+          </button>
+          
           <div className="space-y-4">
-            {userParking && timeRemaining && (
-              <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4 flex items-center gap-3">
-                <div className="bg-primary/20 p-2 rounded-full">
-                  <Clock className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">Parking Timer</p>
-                  <p className="text-lg font-bold text-primary">{timeRemaining}</p>
-                </div>
+            {/* Collapsible Stats Section */}
+            <div 
+              className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                isStatsExpanded ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'
+              }`}
+            >
+              <div className="space-y-4 pb-4">
+                {userParking && timeRemaining && (
+                  <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4 flex items-center gap-3">
+                    <div className="bg-primary/20 p-2 rounded-full">
+                      <Clock className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Parking Timer</p>
+                      <p className="text-lg font-bold text-primary">{timeRemaining}</p>
+                    </div>
+                  </div>
+                )}
+                <StatsCard availableSpots={availableSpots} totalUsers={activeUsers} />
               </div>
-            )}
-            <StatsCard availableSpots={availableSpots} totalUsers={activeUsers} />
+            </div>
+            
+            {/* Expand/Collapse Button with Chevron */}
+            <button 
+              onClick={() => setIsStatsExpanded(!isStatsExpanded)}
+              className="w-full flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground transition-colors py-1"
+            >
+              {isStatsExpanded ? (
+                <>
+                  <ChevronDown className="h-4 w-4" />
+                  <span className="text-sm">Hide stats</span>
+                </>
+              ) : (
+                <>
+                  <ChevronUp className="h-4 w-4" />
+                  <span className="text-sm">Show stats</span>
+                </>
+              )}
+            </button>
+            
+            {/* Always visible parking button */}
             <ParkingButton onToggle={handleParkingToggle} isParked={!!userParking} />
           </div>
         </div>
