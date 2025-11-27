@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { Input } from './ui/input';
+import { Button } from './ui/button';
 
 interface ParkingSpot {
   id: string;
@@ -17,6 +19,8 @@ interface MapProps {
   onManualPinMove?: (location: [number, number]) => void;
 }
 
+const MAPBOX_TOKEN_KEY = 'mapbox_access_token';
+
 const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPinLocation, onManualPinMove }: MapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -24,12 +28,25 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
   const currentLocationMarker = useRef<mapboxgl.Marker | null>(null);
   const manualPinMarker = useRef<mapboxgl.Marker | null>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [mapboxToken, setMapboxToken] = useState<string>(() => {
+    return localStorage.getItem(MAPBOX_TOKEN_KEY) || import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || '';
+  });
+  const [tokenInput, setTokenInput] = useState('');
+  const [showTokenInput, setShowTokenInput] = useState(!mapboxToken);
+
+  const handleSaveToken = () => {
+    if (tokenInput.trim()) {
+      localStorage.setItem(MAPBOX_TOKEN_KEY, tokenInput.trim());
+      setMapboxToken(tokenInput.trim());
+      setShowTokenInput(false);
+    }
+  };
 
   useEffect(() => {
-    if (!mapContainer.current) return;
+    if (!mapContainer.current || !mapboxToken) return;
 
     // Initialize map
-    mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || '';
+    mapboxgl.accessToken = mapboxToken;
     
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
@@ -94,7 +111,7 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
     return () => {
       map.current?.remove();
     };
-  }, [onMapReady]);
+  }, [onMapReady, mapboxToken]);
 
   // Update manual pin location when prop changes
   useEffect(() => {
@@ -171,6 +188,32 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
       console.log('Marker added successfully for spot:', spot.id);
     });
   }, [parkingSpots, isMapLoaded]);
+
+  if (showTokenInput || !mapboxToken) {
+    return (
+      <div className="relative w-full h-full flex items-center justify-center bg-muted/50 rounded-3xl">
+        <div className="bg-card p-6 rounded-xl shadow-lg max-w-md w-full mx-4 space-y-4">
+          <h3 className="text-lg font-semibold text-foreground">Mapbox Access Token Required</h3>
+          <p className="text-sm text-muted-foreground">
+            To display the map, enter your Mapbox public access token. Get one free at{' '}
+            <a href="https://mapbox.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+              mapbox.com
+            </a>
+          </p>
+          <Input
+            type="text"
+            placeholder="pk.eyJ1..."
+            value={tokenInput}
+            onChange={(e) => setTokenInput(e.target.value)}
+            className="w-full"
+          />
+          <Button onClick={handleSaveToken} className="w-full" disabled={!tokenInput.trim()}>
+            Save Token
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full h-full">
