@@ -1,1 +1,4 @@
 project_id = "qicaezvtlhvbedxjdijo"
+
+[functions.mapbox-proxy]
+verify_jwt = false
