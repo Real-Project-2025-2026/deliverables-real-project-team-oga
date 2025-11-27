@@ -510,10 +510,10 @@ const Index = () => {
           onClick={handleRecenter}
           size="icon"
           variant="outline"
-          className="h-12 w-12 rounded-full shadow-lg bg-card hover:bg-accent"
+          className="group h-12 w-12 rounded-full shadow-lg bg-card hover:bg-primary"
           aria-label="Recenter map on my location"
         >
-          <Locate className="h-5 w-5 text-primary" />
+          <Locate className="h-5 w-5 text-primary group-hover:text-white transition-colors" />
         </Button>
       </div>
 
