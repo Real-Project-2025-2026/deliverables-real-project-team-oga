@@ -401,7 +401,7 @@ const Index = () => {
         <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 flex items-start justify-between">
           <div className="flex items-center gap-3">
             <Link to="/">
-              <Button variant="ghost" size="icon" className="touch-target" aria-label="Zurück zur Startseite">
+              <Button variant="ghost" size="icon" className="touch-target" aria-label="Back to home">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             </Link>
