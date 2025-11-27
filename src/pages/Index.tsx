@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { formatDistanceToNow, differenceInMinutes } from 'date-fns';
 import { calculateDistance } from '@/lib/utils';
 import { Clock, Locate } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ParkingSpot {
   id: string;
@@ -33,17 +34,8 @@ interface UserParking {
 
 const Index = () => {
   const { toast } = useToast();
-  const [currentLocation, setCurrentLocation] = useState<[number, number]>([11.5800, 48.1550]); // Default to Munich
-  const [parkingSpots, setParkingSpots] = useState<ParkingSpot[]>([
-    { id: '1', coordinates: [11.5820, 48.1351], available: true, availableSince: new Date(Date.now() - 15 * 60000) },
-    { id: '2', coordinates: [11.5750, 48.1380], available: true, availableSince: new Date(Date.now() - 45 * 60000) },
-    { id: '3', coordinates: [11.5890, 48.1320], available: false },
-    { id: '4', coordinates: [11.5680, 48.1400], available: true, availableSince: new Date(Date.now() - 5 * 60000) },
-    { id: '5', coordinates: [11.5950, 48.1290], available: true, availableSince: new Date(Date.now() - 120 * 60000) },
-    { id: '6', coordinates: [11.5800, 48.1420], available: false },
-    { id: '7', coordinates: [11.5720, 48.1310], available: true, availableSince: new Date(Date.now() - 30 * 60000) },
-    { id: '8', coordinates: [11.5800, 48.1550], available: true, availableSince: new Date(Date.now() - 10 * 60000) }, // Hohenzollernstr. 48
-  ]);
+  const [currentLocation, setCurrentLocation] = useState<[number, number]>([11.5800, 48.1550]);
+  const [parkingSpots, setParkingSpots] = useState<ParkingSpot[]>([]);
   const [selectedSpot, setSelectedSpot] = useState<ParkingSpot | null>(null);
   const [userParking, setUserParking] = useState<UserParking | null>(null);
   const [showTimerDialog, setShowTimerDialog] = useState(false);
@@ -51,8 +43,81 @@ const Index = () => {
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [mapInstance, setMapInstance] = useState<any>(null);
   const [manualPinLocation, setManualPinLocation] = useState<[number, number] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const availableSpots = parkingSpots.filter(spot => spot.available).length;
+
+  // Fetch parking spots from database
+  useEffect(() => {
+    const fetchParkingSpots = async () => {
+      const { data, error } = await supabase
+        .from('parking_spots')
+        .select('*');
+      
+      if (error) {
+        console.error('Error fetching parking spots:', error);
+        toast({
+          title: "Error Loading Spots",
+          description: "Could not load parking spots from the database.",
+          variant: "destructive",
+        });
+      } else if (data) {
+        const spots: ParkingSpot[] = data.map(spot => ({
+          id: spot.id,
+          coordinates: [spot.longitude, spot.latitude] as [number, number],
+          available: spot.available,
+          availableSince: spot.available_since ? new Date(spot.available_since) : undefined,
+        }));
+        setParkingSpots(spots);
+      }
+      setIsLoading(false);
+    };
+
+    fetchParkingSpots();
+
+    // Subscribe to real-time updates
+    const channel = supabase
+      .channel('parking-spots-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'parking_spots'
+        },
+        (payload) => {
+          console.log('Real-time update:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            const newSpot = payload.new as any;
+            setParkingSpots(prev => [...prev, {
+              id: newSpot.id,
+              coordinates: [newSpot.longitude, newSpot.latitude] as [number, number],
+              available: newSpot.available,
+              availableSince: newSpot.available_since ? new Date(newSpot.available_since) : undefined,
+            }]);
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedSpot = payload.new as any;
+            setParkingSpots(prev => prev.map(spot => 
+              spot.id === updatedSpot.id ? {
+                id: updatedSpot.id,
+                coordinates: [updatedSpot.longitude, updatedSpot.latitude] as [number, number],
+                available: updatedSpot.available,
+                availableSince: updatedSpot.available_since ? new Date(updatedSpot.available_since) : undefined,
+              } : spot
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            const deletedSpot = payload.old as any;
+            setParkingSpots(prev => prev.filter(spot => spot.id !== deletedSpot.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [toast]);
 
   // Get user's actual location and center map
   useEffect(() => {
@@ -62,7 +127,6 @@ const Index = () => {
           const newLocation: [number, number] = [position.coords.longitude, position.coords.latitude];
           setCurrentLocation(newLocation);
           
-          // Center map on user's location
           if (mapInstance) {
             mapInstance.flyTo({
               center: newLocation,
@@ -144,23 +208,35 @@ const Index = () => {
     };
 
     updateTimer();
-    const interval = setInterval(updateTimer, 30000); // Update every 30 seconds
+    const interval = setInterval(updateTimer, 30000);
 
     return () => clearInterval(interval);
   }, [userParking, toast]);
 
-  const handleParkingToggle = (isParked: boolean) => {
+  const handleParkingToggle = async (isParked: boolean) => {
     if (isParked) {
-      // Show timer dialog to set parking duration
       setShowTimerDialog(true);
     } else {
-      // User is leaving - clear their parking
       if (userParking) {
-        setParkingSpots(spots =>
-          spots.map(spot =>
-            spot.id === userParking.spotId ? { ...spot, available: true, availableSince: new Date() } : spot
-          )
-        );
+        // Update spot in database to be available again
+        const { error } = await supabase
+          .from('parking_spots')
+          .update({ 
+            available: true, 
+            available_since: new Date().toISOString() 
+          })
+          .eq('id', userParking.spotId);
+
+        if (error) {
+          console.error('Error updating spot:', error);
+          toast({
+            title: "Error",
+            description: "Could not update parking spot.",
+            variant: "destructive",
+          });
+          return;
+        }
+
         setUserParking(null);
         toast({
           title: "Thanks for Sharing!",
@@ -170,7 +246,7 @@ const Index = () => {
     }
   };
 
-  const handleSetParkingTimer = () => {
+  const handleSetParkingTimer = async () => {
     const duration = parseInt(parkingDuration);
     if (isNaN(duration) || duration <= 0) {
       toast({
@@ -184,32 +260,58 @@ const Index = () => {
     const now = new Date();
     const returnTime = new Date(now.getTime() + duration * 60000);
     
-    // Check if we're taking an existing spot or creating a new one
     if (selectedSpot) {
-      // Taking an existing spot
+      // Taking an existing spot - update in database
+      const { error } = await supabase
+        .from('parking_spots')
+        .update({ 
+          available: false, 
+          available_since: null 
+        })
+        .eq('id', selectedSpot.id);
+
+      if (error) {
+        console.error('Error updating spot:', error);
+        toast({
+          title: "Error",
+          description: "Could not take this parking spot.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       setUserParking({
         spotId: selectedSpot.id,
         parkingTime: now,
         returnTime: returnTime,
         durationMinutes: duration,
       });
-
-      setParkingSpots(spots =>
-        spots.map(spot =>
-          spot.id === selectedSpot.id ? { ...spot, available: false, availableSince: undefined } : spot
-        )
-      );
       
       setSelectedSpot(null);
     } else {
       // Creating a new spot at manual pin location or current location
       const spotLocation = manualPinLocation || currentLocation;
       const newSpotId = `user-${Date.now()}`;
-      const newSpot: ParkingSpot = {
-        id: newSpotId,
-        coordinates: spotLocation,
-        available: false,
-      };
+      
+      const { error } = await supabase
+        .from('parking_spots')
+        .insert({
+          id: newSpotId,
+          latitude: spotLocation[1],
+          longitude: spotLocation[0],
+          available: false,
+          available_since: null,
+        });
+
+      if (error) {
+        console.error('Error creating spot:', error);
+        toast({
+          title: "Error",
+          description: "Could not create parking spot.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       setUserParking({
         spotId: newSpotId,
@@ -217,9 +319,6 @@ const Index = () => {
         returnTime: returnTime,
         durationMinutes: duration,
       });
-
-      // Add the new spot to the map
-      setParkingSpots(spots => [...spots, newSpot]);
     }
 
     setShowTimerDialog(false);
@@ -239,9 +338,6 @@ const Index = () => {
 
   const handleTakeSpot = () => {
     if (!selectedSpot) return;
-
-    // Taking an existing spot - just show timer dialog
-    // The spot will be marked as taken when timer is set
     setShowTimerDialog(true);
   };
 
