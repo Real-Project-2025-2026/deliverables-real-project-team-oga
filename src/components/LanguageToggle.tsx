@@ -9,18 +9,20 @@ const LanguageToggle = () => {
       <Button
         variant={language === "de" ? "default" : "ghost"}
         size="sm"
-        className="h-7 px-3 rounded-full text-xs font-medium"
+        className="h-7 w-7 rounded-full p-0 text-base"
         onClick={() => setLanguage("de")}
+        aria-label="Deutsch"
       >
-        DE
+        🇩🇪
       </Button>
       <Button
         variant={language === "en" ? "default" : "ghost"}
         size="sm"
-        className="h-7 px-3 rounded-full text-xs font-medium"
+        className="h-7 w-7 rounded-full p-0 text-base"
         onClick={() => setLanguage("en")}
+        aria-label="English"
       >
-        EN
+        🇬🇧
       </Button>
     </div>
   );
