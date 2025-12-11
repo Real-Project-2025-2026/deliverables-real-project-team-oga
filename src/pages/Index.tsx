@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDistanceToNow, differenceInMinutes } from "date-fns";
 import { calculateDistance } from "@/lib/utils";
-import { Clock, Locate, LogOut, ChevronUp, ChevronDown, ArrowLeft } from "lucide-react";
+import { Clock, Locate, LogOut, ChevronUp, ChevronDown, ArrowLeft, Navigation, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 interface ParkingSpot {
@@ -395,6 +395,23 @@ const Index = () => {
       });
     }
   };
+
+  // OS Detection for navigation
+  const isIOS = () => {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  };
+
+  // Navigation handler
+  const handleNavigateToSpot = (spot: ParkingSpot, mapType: 'google' | 'apple') => {
+    const [lng, lat] = spot.coordinates;
+    
+    if (mapType === 'google') {
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+    } else {
+      window.open(`https://maps.apple.com/?daddr=${lat},${lng}`, '_blank');
+    }
+  };
   return <div className="h-[100dvh] w-full bg-background overflow-hidden">
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-10 pt-safe">
@@ -453,7 +470,55 @@ const Index = () => {
               {selectedSpot?.availableSince && formatDistanceToNow(selectedSpot.availableSince)}
             </div>
           </div>
-          <div className="flex justify-center pt-4">
+          <div className="space-y-2 pt-4">
+            {/* Navigation Buttons - OS-based primary/secondary */}
+            {selectedSpot && (
+              <>
+                {isIOS() ? (
+                  <>
+                    <Button 
+                      onClick={() => handleNavigateToSpot(selectedSpot, 'apple')} 
+                      size="lg" 
+                      variant="outline"
+                      className="w-full gap-2"
+                    >
+                      <Navigation className="h-4 w-4" />
+                      Navigate with Apple Maps
+                    </Button>
+                    <Button 
+                      onClick={() => handleNavigateToSpot(selectedSpot, 'google')} 
+                      size="lg" 
+                      variant="ghost"
+                      className="w-full gap-2 text-muted-foreground"
+                    >
+                      <MapPin className="h-4 w-4" />
+                      Open in Google Maps
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button 
+                      onClick={() => handleNavigateToSpot(selectedSpot, 'google')} 
+                      size="lg" 
+                      variant="outline"
+                      className="w-full gap-2"
+                    >
+                      <Navigation className="h-4 w-4" />
+                      Navigate with Google Maps
+                    </Button>
+                    <Button 
+                      onClick={() => handleNavigateToSpot(selectedSpot, 'apple')} 
+                      size="lg" 
+                      variant="ghost"
+                      className="w-full gap-2 text-muted-foreground"
+                    >
+                      <MapPin className="h-4 w-4" />
+                      Open in Apple Maps
+                    </Button>
+                  </>
+                )}
+              </>
+            )}
             <Button onClick={handleTakeSpot} size="lg" className="w-full">
               Take This Spot
             </Button>
