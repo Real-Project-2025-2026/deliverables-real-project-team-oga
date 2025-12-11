@@ -148,15 +148,19 @@ const Index = () => {
         });
       }, error => {
         console.error("Error getting location:", error);
-        toast({
-          title: "Location Access Denied",
-          description: "Using default location. Enable location access for better results.",
-          variant: "destructive"
-        });
+        // Only show error for actual permission denial, not timeout
+        if (error.code === error.PERMISSION_DENIED) {
+          toast({
+            title: "Location Access Denied",
+            description: "Using default location. Enable location access for better results.",
+            variant: "destructive"
+          });
+        }
+        // For timeout or position unavailable, silently use default location
       }, {
         enableHighAccuracy: true,
-        timeout: 5000,
-        maximumAge: 0
+        timeout: 15000,
+        maximumAge: 60000
       });
     } else {
       toast({
