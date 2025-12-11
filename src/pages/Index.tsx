@@ -132,43 +132,59 @@ const Index = () => {
 
   // Get user's actual location and center map
   useEffect(() => {
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(position => {
-        const newLocation: [number, number] = [position.coords.longitude, position.coords.latitude];
-        setCurrentLocation(newLocation);
-        if (mapInstance) {
-          mapInstance.flyTo({
-            center: newLocation,
-            zoom: 15
-          });
-        }
-        toast({
-          title: "Location Found",
-          description: "Using your current location to find nearby parking."
-        });
-      }, error => {
-        console.error("Location error code:", error.code, "message:", error.message);
-        // GeolocationPositionError codes: 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE, 3 = TIMEOUT
-        // Only show error toast for actual permission denial (code 1)
-        if (error.code === 1) {
-          toast({
-            title: "Location Access Denied",
-            description: "Using default location. Enable location access for better results.",
-            variant: "destructive"
-          });
-        }
-      }, {
-        enableHighAccuracy: true,
-        timeout: 5000,
-        maximumAge: 0
-      });
-    } else {
+    if (!("geolocation" in navigator)) {
       toast({
         title: "Location Not Supported",
         description: "Your browser doesn't support geolocation.",
         variant: "destructive"
       });
+      return;
     }
+
+    const handleLocationSuccess = (position: GeolocationPosition) => {
+      const newLocation: [number, number] = [position.coords.longitude, position.coords.latitude];
+      setCurrentLocation(newLocation);
+      if (mapInstance) {
+        mapInstance.flyTo({
+          center: newLocation,
+          zoom: 15
+        });
+      }
+      toast({
+        title: "Location Found",
+        description: "Using your current location to find nearby parking."
+      });
+    };
+
+    const handleLocationError = (error: GeolocationPositionError) => {
+      console.error("Location error code:", error.code, "message:", error.message);
+      // Only show error for permission denied (code 1)
+      if (error.code === 1) {
+        toast({
+          title: "Location Access Denied",
+          description: "Using default location. Enable location access for better results.",
+          variant: "destructive"
+        });
+      }
+    };
+
+    // Try with low accuracy first (faster, works in browsers without GPS)
+    navigator.geolocation.getCurrentPosition(
+      handleLocationSuccess,
+      (error) => {
+        // If low accuracy fails with POSITION_UNAVAILABLE or TIMEOUT, try high accuracy
+        if (error.code === 2 || error.code === 3) {
+          navigator.geolocation.getCurrentPosition(
+            handleLocationSuccess,
+            handleLocationError,
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+          );
+        } else {
+          handleLocationError(error);
+        }
+      },
+      { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
+    );
   }, [toast, mapInstance]);
   const getDistanceToSpot = (spot: ParkingSpot) => {
     const distance = calculateDistance(currentLocation[1], currentLocation[0], spot.coordinates[1], spot.coordinates[0]);
