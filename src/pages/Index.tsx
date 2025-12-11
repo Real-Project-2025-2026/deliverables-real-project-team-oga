@@ -147,20 +147,20 @@ const Index = () => {
           description: "Using your current location to find nearby parking."
         });
       }, error => {
-        console.error("Error getting location:", error);
-        // Only show error for actual permission denial, not timeout
-        if (error.code === error.PERMISSION_DENIED) {
+        console.error("Location error code:", error.code, "message:", error.message);
+        // GeolocationPositionError codes: 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE, 3 = TIMEOUT
+        // Only show error toast for actual permission denial (code 1)
+        if (error.code === 1) {
           toast({
             title: "Location Access Denied",
             description: "Using default location. Enable location access for better results.",
             variant: "destructive"
           });
         }
-        // For timeout or position unavailable, silently use default location
       }, {
         enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 60000
+        timeout: 5000,
+        maximumAge: 0
       });
     } else {
       toast({
