@@ -23,8 +23,8 @@ const AccountMenu = ({ user, onSignOut }: AccountMenuProps) => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="gap-2 touch-target hover:bg-transparent">
-          <div className="h-7 w-7 rounded-full bg-primary/10 hover:bg-primary flex items-center justify-center transition-all duration-200 group/icon">
-            <UserIcon className="h-4 w-4 text-primary group-hover/icon:text-primary-foreground transition-colors duration-200" />
+          <div className="h-7 w-7 rounded-full bg-primary/10 hover:bg-primary flex items-center justify-center transition-all duration-200 [&:hover>svg]:text-white">
+            <UserIcon className="h-4 w-4 text-primary transition-colors duration-200" />
           </div>
           <span className="hidden sm:inline max-w-[100px] truncate text-foreground">{displayName}</span>
           <ChevronDown className="h-3 w-3 text-muted-foreground" />
