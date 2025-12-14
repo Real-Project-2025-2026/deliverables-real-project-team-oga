@@ -6,32 +6,38 @@ import StatsCard from "@/components/StatsCard";
 import AuthDialog from "@/components/AuthDialog";
 import { useToast } from "@/hooks/use-toast";
 import { usePresence } from "@/hooks/usePresence";
+import { useCredits } from "@/hooks/useCredits";
+import { useHandshake } from "@/hooks/useHandshake";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDistanceToNow, differenceInMinutes } from "date-fns";
 import { calculateDistance } from "@/lib/utils";
-import { Clock, Locate, ChevronUp, ChevronDown, ArrowLeft, Navigation, MapPin } from "lucide-react";
+import { Clock, Locate, ChevronUp, ChevronDown, ArrowLeft, Navigation, MapPin, Handshake } from "lucide-react";
 import AccountMenu from "@/components/AccountMenu";
+import LeavingOptionsDialog from "@/components/LeavingOptionsDialog";
+import HandshakeDialog from "@/components/HandshakeDialog";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+
 interface ParkingSpot {
   id: string;
   coordinates: [number, number];
   available: boolean;
   availableSince?: Date;
+  isHandshake?: boolean;
 }
+
 interface UserParking {
   spotId: string;
   parkingTime: Date;
   returnTime: Date;
   durationMinutes: number;
 }
+
 const Index = () => {
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const activeUsers = usePresence();
   const [currentLocation, setCurrentLocation] = useState<[number, number]>([11.58, 48.155]);
   const [parkingSpots, setParkingSpots] = useState<ParkingSpot[]>([]);
@@ -48,6 +54,20 @@ const Index = () => {
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [pendingAction, setPendingAction] = useState<"park" | "take" | null>(null);
   const [isStatsExpanded, setIsStatsExpanded] = useState(false);
+  const [showLeavingOptions, setShowLeavingOptions] = useState(false);
+  const [showHandshakeDialog, setShowHandshakeDialog] = useState(false);
+
+  // Credit and Handshake hooks
+  const { credits, deductCredits, refreshCredits } = useCredits(user);
+  const { 
+    myDeal, 
+    activeDeals, 
+    createHandshakeOffer, 
+    acceptDeal, 
+    confirmHandover, 
+    cancelDeal,
+    getOpenDeals 
+  } = useHandshake(user);
 
   // Auth state management
   useEffect(() => {
@@ -273,30 +293,96 @@ const Index = () => {
       }
       setShowTimerDialog(true);
     } else {
+      // User wants to leave - show options dialog
       if (userParking) {
-        // Update spot in database to be available again
-        const {
-          error
-        } = await supabase.from("parking_spots").update({
-          available: true,
-          available_since: new Date().toISOString()
-        }).eq("id", userParking.spotId);
-        if (error) {
-          console.error("Error updating spot:", error);
-          toast({
-            title: "Error",
-            description: "Could not update parking spot.",
-            variant: "destructive"
-          });
-          return;
-        }
-        setUserParking(null);
-        toast({
-          title: "Thanks for Sharing!",
-          description: "Your spot is now available for others."
-        });
+        setShowLeavingOptions(true);
       }
     }
+  };
+
+  const handleNormalLeave = async () => {
+    if (!userParking) return;
+    
+    // Check credits
+    if (!credits.canPark) {
+      toast({
+        title: "Nicht genug Credits",
+        description: "Du benötigst mindestens 2 Credits zum Parken.",
+        variant: "destructive"
+      });
+      setShowLeavingOptions(false);
+      return;
+    }
+
+    // Deduct credits
+    const success = await deductCredits(userParking.spotId);
+    if (!success) {
+      toast({
+        title: "Fehler",
+        description: "Credits konnten nicht abgezogen werden.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Update spot in database to be available again
+    const { error } = await supabase.from("parking_spots").update({
+      available: true,
+      available_since: new Date().toISOString()
+    }).eq("id", userParking.spotId);
+
+    if (error) {
+      console.error("Error updating spot:", error);
+      toast({
+        title: "Error",
+        description: "Could not update parking spot.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setUserParking(null);
+    setShowLeavingOptions(false);
+    toast({
+      title: "Danke fürs Teilen!",
+      description: "Dein Platz ist jetzt für andere verfügbar. (-2 Credits)"
+    });
+  };
+
+  const handleHandshakeOffer = async () => {
+    if (!userParking || !user) return;
+
+    // Get spot coordinates
+    const spot = parkingSpots.find(s => s.id === userParking.spotId);
+    if (!spot) return;
+
+    const deal = await createHandshakeOffer(
+      userParking.spotId,
+      spot.coordinates[1],
+      spot.coordinates[0]
+    );
+
+    if (deal) {
+      setShowLeavingOptions(false);
+      setShowHandshakeDialog(true);
+    }
+  };
+
+  const handleConfirmHandover = async () => {
+    if (!myDeal) return;
+    await confirmHandover(myDeal.id);
+    
+    // If deal is completed, clear user parking
+    if (myDeal.status === 'completed' || myDeal.status === 'receiver_confirmed') {
+      setUserParking(null);
+      setShowHandshakeDialog(false);
+    }
+  };
+
+  const handleCancelDeal = async () => {
+    if (!myDeal) return;
+    await cancelDeal(myDeal.id);
+    setShowHandshakeDialog(false);
   };
   const handleSetParkingTimer = async () => {
     const duration = parseInt(parkingDuration);
@@ -449,7 +535,7 @@ const Index = () => {
             </div>
           </div>
           {user ? (
-            <AccountMenu user={user} onSignOut={handleSignOut} />
+            <AccountMenu user={user} onSignOut={handleSignOut} creditBalance={credits.balance} />
           ) : (
             <Button variant="outline" size="sm" onClick={() => setShowAuthDialog(true)} className="touch-target">
               Sign In
@@ -622,6 +708,25 @@ const Index = () => {
 
       {/* Auth Dialog */}
       <AuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} onSuccess={handleAuthSuccess} />
+
+      {/* Leaving Options Dialog */}
+      <LeavingOptionsDialog
+        open={showLeavingOptions}
+        onOpenChange={setShowLeavingOptions}
+        onNormalLeave={handleNormalLeave}
+        onHandshakeOffer={handleHandshakeOffer}
+        hasEnoughCredits={credits.canPark}
+      />
+
+      {/* Handshake Dialog */}
+      <HandshakeDialog
+        deal={myDeal}
+        user={user}
+        open={showHandshakeDialog}
+        onOpenChange={setShowHandshakeDialog}
+        onConfirm={handleConfirmHandover}
+        onCancel={handleCancelDeal}
+      />
     </div>;
 };
 export default Index;

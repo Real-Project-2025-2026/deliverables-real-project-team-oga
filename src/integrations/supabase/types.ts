@@ -14,6 +14,138 @@ export type Database = {
   }
   public: {
     Tables: {
+      credit_packages: {
+        Row: {
+          created_at: string
+          credits: number
+          id: string
+          is_active: boolean
+          name: string
+          price_cents: number
+        }
+        Insert: {
+          created_at?: string
+          credits: number
+          id?: string
+          is_active?: boolean
+          name: string
+          price_cents: number
+        }
+        Update: {
+          created_at?: string
+          credits?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_cents?: number
+        }
+        Relationships: []
+      }
+      credit_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          related_spot_id: string | null
+          related_user_id: string | null
+          type: Database["public"]["Enums"]["credit_transaction_type"]
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          related_spot_id?: string | null
+          related_user_id?: string | null
+          type: Database["public"]["Enums"]["credit_transaction_type"]
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          related_spot_id?: string | null
+          related_user_id?: string | null
+          type?: Database["public"]["Enums"]["credit_transaction_type"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      handshake_deals: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          giver_id: string
+          id: string
+          latitude: number
+          longitude: number
+          receiver_id: string | null
+          spot_id: string
+          status: Database["public"]["Enums"]["handshake_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          giver_id: string
+          id?: string
+          latitude: number
+          longitude: number
+          receiver_id?: string | null
+          spot_id: string
+          status?: Database["public"]["Enums"]["handshake_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          giver_id?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          receiver_id?: string | null
+          spot_id?: string
+          status?: Database["public"]["Enums"]["handshake_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      memberships: {
+        Row: {
+          created_at: string
+          credits_included: number
+          features: Json | null
+          id: string
+          is_active: boolean
+          monthly_bonus_credits: number
+          name: string
+          price_cents: number
+        }
+        Insert: {
+          created_at?: string
+          credits_included?: number
+          features?: Json | null
+          id?: string
+          is_active?: boolean
+          monthly_bonus_credits?: number
+          name: string
+          price_cents: number
+        }
+        Update: {
+          created_at?: string
+          credits_included?: number
+          features?: Json | null
+          id?: string
+          is_active?: boolean
+          monthly_bonus_credits?: number
+          name?: string
+          price_cents?: number
+        }
+        Relationships: []
+      }
       parking_history: {
         Row: {
           created_at: string
@@ -104,6 +236,68 @@ export type Database = {
         }
         Relationships: []
       }
+      user_credits: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_memberships: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          membership_id: string
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          membership_id: string
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          membership_id?: string
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_memberships_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -112,7 +306,20 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      credit_transaction_type:
+        | "parking_used"
+        | "handshake_giver"
+        | "handshake_receiver"
+        | "purchase"
+        | "welcome_bonus"
+        | "membership_bonus"
+      handshake_status:
+        | "open"
+        | "accepted"
+        | "giver_confirmed"
+        | "receiver_confirmed"
+        | "completed"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -239,6 +446,23 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      credit_transaction_type: [
+        "parking_used",
+        "handshake_giver",
+        "handshake_receiver",
+        "purchase",
+        "welcome_bonus",
+        "membership_bonus",
+      ],
+      handshake_status: [
+        "open",
+        "accepted",
+        "giver_confirmed",
+        "receiver_confirmed",
+        "completed",
+        "cancelled",
+      ],
+    },
   },
 } as const
