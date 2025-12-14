@@ -231,10 +231,13 @@ serve(async (req) => {
           .update({ status: 'completed' })
           .eq('id', body.dealId);
 
-        // Delete the parking spot (it's now handed over)
+        // Transfer the parking spot to the receiver (mark as unavailable, receiver now owns it)
         await supabase
           .from('parking_spots')
-          .delete()
+          .update({
+            available: false,
+            available_since: null
+          })
           .eq('id', deal.spot_id);
 
         console.log('Handshake completed successfully');
@@ -242,7 +245,10 @@ serve(async (req) => {
         return new Response(JSON.stringify({ 
           success: true,
           status: 'completed',
-          completed: true
+          completed: true,
+          spotId: deal.spot_id,
+          receiverId: deal.receiver_id,
+          giverId: deal.giver_id
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
