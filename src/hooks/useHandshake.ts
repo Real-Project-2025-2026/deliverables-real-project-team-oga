@@ -21,6 +21,7 @@ export const useHandshake = (user: User | null) => {
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchDeals = async () => {
+    console.log('Fetching handshake deals...');
     try {
       const { data, error } = await supabase
         .from('handshake_deals')
@@ -32,6 +33,7 @@ export const useHandshake = (user: User | null) => {
         return;
       }
 
+      console.log('Fetched deals:', data?.length, data);
       setActiveDeals(data as HandshakeDeal[]);
       
       // Find user's active deal

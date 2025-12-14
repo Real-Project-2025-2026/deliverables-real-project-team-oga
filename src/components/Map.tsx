@@ -286,14 +286,20 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
 
   // Update handshake deal markers
   useEffect(() => {
+    console.log('Handshake deals received in Map:', handshakeDeals);
+    console.log('Map loaded:', isMapLoaded, 'Map instance:', !!map.current);
+    
     if (!map.current || !isMapLoaded) return;
 
     // Remove old handshake markers
     Object.values(handshakeMarkers.current).forEach(marker => marker.remove());
     handshakeMarkers.current = {};
 
+    console.log('Processing handshake deals for markers:', handshakeDeals.length);
+
     // Add new handshake markers
     handshakeDeals.forEach(deal => {
+      console.log('Adding marker for deal:', deal.id, 'status:', deal.status);
       if (!map.current || deal.status !== 'open') return;
 
       const el = document.createElement('div');
