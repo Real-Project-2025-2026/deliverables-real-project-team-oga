@@ -299,8 +299,15 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
 
     // Add new handshake markers
     handshakeDeals.forEach(deal => {
-      console.log('Adding marker for deal:', deal.id, 'status:', deal.status);
-      if (!map.current || deal.status !== 'open') return;
+      console.log('Adding marker for deal:', deal.id, 'status:', deal.status, 'at:', deal.longitude, deal.latitude);
+      if (!map.current) {
+        console.log('No map instance for deal:', deal.id);
+        return;
+      }
+      if (deal.status !== 'open') {
+        console.log('Deal status is not open:', deal.status);
+        return;
+      }
 
       const el = document.createElement('div');
       el.innerHTML = `
@@ -316,16 +323,22 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
       `;
       el.style.cursor = 'pointer';
       el.style.position = 'relative';
+      el.style.zIndex = '1000';
 
       if (onHandshakeDealClick) {
         el.addEventListener('click', () => onHandshakeDealClick(deal.id));
       }
 
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat([deal.longitude, deal.latitude])
-        .addTo(map.current);
+      try {
+        const marker = new mapboxgl.Marker(el)
+          .setLngLat([deal.longitude, deal.latitude])
+          .addTo(map.current);
 
-      handshakeMarkers.current[deal.id] = marker;
+        handshakeMarkers.current[deal.id] = marker;
+        console.log('Marker successfully added for deal:', deal.id);
+      } catch (err) {
+        console.error('Error adding marker for deal:', deal.id, err);
+      }
     });
   }, [handshakeDeals, isMapLoaded, onHandshakeDealClick]);
 
