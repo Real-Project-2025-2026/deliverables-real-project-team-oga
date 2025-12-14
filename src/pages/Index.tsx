@@ -36,13 +36,31 @@ interface UserParking {
   durationMinutes: number;
 }
 
+const PARKING_SESSION_KEY = 'ogap_parking_session';
+
 const Index = () => {
   const { toast } = useToast();
   const activeUsers = usePresence();
   const [currentLocation, setCurrentLocation] = useState<[number, number]>([11.58, 48.155]);
   const [parkingSpots, setParkingSpots] = useState<ParkingSpot[]>([]);
   const [selectedSpot, setSelectedSpot] = useState<ParkingSpot | null>(null);
-  const [userParking, setUserParking] = useState<UserParking | null>(null);
+  const [userParking, setUserParking] = useState<UserParking | null>(() => {
+    // Restore parking session from localStorage
+    const saved = localStorage.getItem(PARKING_SESSION_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return {
+          ...parsed,
+          parkingTime: new Date(parsed.parkingTime),
+          returnTime: new Date(parsed.returnTime)
+        };
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
   const [showTimerDialog, setShowTimerDialog] = useState(false);
   const [parkingDuration, setParkingDuration] = useState<string>("60");
   const [timeRemaining, setTimeRemaining] = useState<string>("");
@@ -56,6 +74,15 @@ const Index = () => {
   const [isStatsExpanded, setIsStatsExpanded] = useState(false);
   const [showLeavingOptions, setShowLeavingOptions] = useState(false);
   const [showHandshakeDialog, setShowHandshakeDialog] = useState(false);
+
+  // Persist parking session to localStorage
+  useEffect(() => {
+    if (userParking) {
+      localStorage.setItem(PARKING_SESSION_KEY, JSON.stringify(userParking));
+    } else {
+      localStorage.removeItem(PARKING_SESSION_KEY);
+    }
+  }, [userParking]);
 
   // Credit and Handshake hooks
   const { credits, deductCredits, refreshCredits } = useCredits(user);
@@ -571,13 +598,28 @@ const Index = () => {
               <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Find & Share Free Parking</p>
             </div>
           </div>
-          {user ? (
-            <AccountMenu user={user} onSignOut={handleSignOut} creditBalance={credits.balance} />
-          ) : (
-            <Button variant="outline" size="sm" onClick={() => setShowAuthDialog(true)} className="touch-target">
-              Sign In
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {/* Active Handshake Deal Indicator */}
+            {myDeal && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowHandshakeDialog(true)}
+                className="touch-target relative"
+                aria-label="Active handshake deal"
+              >
+                <Handshake className="h-5 w-5 text-primary" />
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse" />
+              </Button>
+            )}
+            {user ? (
+              <AccountMenu user={user} onSignOut={handleSignOut} creditBalance={credits.balance} />
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setShowAuthDialog(true)} className="touch-target">
+                Sign In
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
