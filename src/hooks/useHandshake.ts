@@ -244,8 +244,9 @@ export const useHandshake = (user: User | null) => {
   };
 
   // Complete the deal (called by edge function or manually when departure time reached)
-  const completeDeal = async (dealId: string): Promise<boolean> => {
-    if (!user) return false;
+  // Returns deal completion data including spotId for parking session transfer
+  const completeDeal = async (dealId: string): Promise<{ success: boolean; spotId?: string; receiverId?: string; giverId?: string }> => {
+    if (!user) return { success: false };
 
     try {
       const { data, error } = await supabase.functions.invoke('process-credits', {
@@ -259,7 +260,7 @@ export const useHandshake = (user: User | null) => {
           description: 'Deal konnte nicht abgeschlossen werden.',
           variant: 'destructive'
         });
-        return false;
+        return { success: false };
       }
 
       toast({
@@ -269,10 +270,15 @@ export const useHandshake = (user: User | null) => {
       
       setMyDeal(null);
       fetchDeals();
-      return true;
+      return { 
+        success: true, 
+        spotId: data.spotId, 
+        receiverId: data.receiverId,
+        giverId: data.giverId
+      };
     } catch (error) {
       console.error('Error completing deal:', error);
-      return false;
+      return { success: false };
     }
   };
 

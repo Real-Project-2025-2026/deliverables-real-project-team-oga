@@ -126,6 +126,51 @@ const Index = () => {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // Watch for completed handshake deals where user is receiver
+  // This creates a parking session for the receiver when the giver completes the deal
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('handshake-completion')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'handshake_deals',
+          filter: `receiver_id=eq.${user.id}`
+        },
+        async (payload) => {
+          const deal = payload.new as any;
+          console.log('Handshake deal update for receiver:', deal);
+          
+          // Check if deal just got completed
+          if (deal.status === 'completed' && !userParking) {
+            // Set parking session for the receiver
+            const now = new Date();
+            const defaultDuration = 60; // 60 minutes default
+            setUserParking({
+              spotId: deal.spot_id,
+              parkingTime: now,
+              returnTime: new Date(now.getTime() + defaultDuration * 60000),
+              durationMinutes: defaultDuration
+            });
+            toast({
+              title: 'Parkplatz erhalten!',
+              description: 'Der Handshake ist abgeschlossen. Du hast jetzt den Parkplatz.'
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, userParking, toast]);
+
   const availableSpots = parkingSpots.filter(spot => spot.available).length;
 
   // Fetch parking spots from database
@@ -426,10 +471,15 @@ const Index = () => {
   };
 
   const handleCompleteDeal = async () => {
-    if (!myDeal) return;
-    const success = await completeDeal(myDeal.id);
-    if (success) {
-      setUserParking(null);
+    if (!myDeal || !user) return;
+    const result = await completeDeal(myDeal.id);
+    if (result.success) {
+      // Check if current user is the giver or receiver
+      if (user.id === result.giverId) {
+        // Giver: Clear parking session
+        setUserParking(null);
+      }
+      // Note: Receiver's parking session will be set via real-time update or separate action
       setShowHandshakeDialog(false);
     }
   };
