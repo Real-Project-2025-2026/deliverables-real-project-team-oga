@@ -384,6 +384,36 @@ const Index = () => {
     await cancelDeal(myDeal.id);
     setShowHandshakeDialog(false);
   };
+
+  const [selectedHandshakeDeal, setSelectedHandshakeDeal] = useState<string | null>(null);
+
+  const handleHandshakeDealClick = async (dealId: string) => {
+    if (!user) {
+      setShowAuthDialog(true);
+      return;
+    }
+
+    // Find the deal
+    const deal = activeDeals.find(d => d.id === dealId);
+    if (!deal) return;
+
+    // Can't accept own deal
+    if (deal.giver_id === user.id) {
+      toast({
+        title: "Das ist dein eigenes Angebot",
+        description: "Du kannst dein eigenes Handshake-Angebot nicht annehmen.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Accept the deal
+    const success = await acceptDeal(dealId);
+    if (success) {
+      setShowHandshakeDialog(true);
+    }
+  };
+
   const handleSetParkingTimer = async () => {
     const duration = parseInt(parkingDuration);
     if (isNaN(duration) || duration <= 0) {
@@ -549,7 +579,16 @@ const Index = () => {
       paddingBottom: isStatsExpanded ? "14rem" : "7rem"
     }}>
         <div className="h-full px-3 sm:px-6 relative">
-          <Map parkingSpots={parkingSpots} currentLocation={currentLocation} onSpotClick={handleSpotClick} onMapReady={setMapInstance} manualPinLocation={manualPinLocation} onManualPinMove={setManualPinLocation} />
+          <Map 
+            parkingSpots={parkingSpots} 
+            currentLocation={currentLocation} 
+            onSpotClick={handleSpotClick} 
+            onMapReady={setMapInstance} 
+            manualPinLocation={manualPinLocation} 
+            onManualPinMove={setManualPinLocation}
+            handshakeDeals={getOpenDeals()}
+            onHandshakeDealClick={handleHandshakeDealClick}
+          />
         </div>
       </div>
 

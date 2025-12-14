@@ -11,6 +11,14 @@ interface ParkingSpot {
   available: boolean;
 }
 
+interface HandshakeDeal {
+  id: string;
+  spot_id: string;
+  latitude: number;
+  longitude: number;
+  status: string;
+}
+
 interface MapProps {
   onMapReady?: (map: mapboxgl.Map) => void;
   parkingSpots: ParkingSpot[];
@@ -18,14 +26,17 @@ interface MapProps {
   onSpotClick?: (spotId: string) => void;
   manualPinLocation?: [number, number] | null;
   onManualPinMove?: (location: [number, number]) => void;
+  handshakeDeals?: HandshakeDeal[];
+  onHandshakeDealClick?: (dealId: string) => void;
 }
 
 const MAPBOX_TOKEN_KEY = 'mapbox_access_token';
 
-const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPinLocation, onManualPinMove }: MapProps) => {
+const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPinLocation, onManualPinMove, handshakeDeals = [], onHandshakeDealClick }: MapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<{ [key: string]: mapboxgl.Marker }>({});
+  const handshakeMarkers = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const currentLocationMarker = useRef<mapboxgl.Marker | null>(null);
   const manualPinMarker = useRef<mapboxgl.Marker | null>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
@@ -273,6 +284,45 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
     });
   }, [parkingSpots, isMapLoaded, onSpotClick]);
 
+  // Update handshake deal markers
+  useEffect(() => {
+    if (!map.current || !isMapLoaded) return;
+
+    // Remove old handshake markers
+    Object.values(handshakeMarkers.current).forEach(marker => marker.remove());
+    handshakeMarkers.current = {};
+
+    // Add new handshake markers
+    handshakeDeals.forEach(deal => {
+      if (!map.current || deal.status !== 'open') return;
+
+      const el = document.createElement('div');
+      el.innerHTML = `
+        <div class="handshake-marker">
+          <svg width="44" height="52" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 20 12 20s12-11 12-20c0-6.627-5.373-12-12-12z" 
+                  fill="hsl(38, 92%, 50%)" 
+                  stroke="white" stroke-width="2"/>
+            <text x="12" y="16" text-anchor="middle" fill="white" font-size="12" font-weight="bold">🤝</text>
+          </svg>
+          <div class="handshake-pulse"></div>
+        </div>
+      `;
+      el.style.cursor = 'pointer';
+      el.style.position = 'relative';
+
+      if (onHandshakeDealClick) {
+        el.addEventListener('click', () => onHandshakeDealClick(deal.id));
+      }
+
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat([deal.longitude, deal.latitude])
+        .addTo(map.current);
+
+      handshakeMarkers.current[deal.id] = marker;
+    });
+  }, [handshakeDeals, isMapLoaded, onHandshakeDealClick]);
+
   // Token input form - render as overlay
   if (status === 'input') {
     return (
@@ -338,6 +388,22 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
         @keyframes pulse {
           0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
           100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+        }
+        .handshake-marker {
+          position: relative;
+          filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+        }
+        .handshake-pulse {
+          position: absolute;
+          top: 6px; left: 6px;
+          width: 32px; height: 32px;
+          border: 3px solid hsl(38, 92%, 50%);
+          border-radius: 50%;
+          animation: handshakePulse 1.5s ease-out infinite;
+        }
+        @keyframes handshakePulse {
+          0% { transform: scale(0.8); opacity: 1; }
+          100% { transform: scale(2); opacity: 0; }
         }
       `}</style>
       
