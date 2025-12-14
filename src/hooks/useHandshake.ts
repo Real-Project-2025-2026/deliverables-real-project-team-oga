@@ -220,7 +220,13 @@ export const useHandshake = (user: User | null) => {
   };
 
   const getOpenDeals = () => {
-    return activeDeals.filter(d => d.status === 'open' && d.giver_id !== user?.id);
+    // Show all open deals, but filter out user's own deals if logged in
+    return activeDeals.filter(d => d.status === 'open' && (!user || d.giver_id !== user.id));
+  };
+
+  // Also return all open deals without filtering for the map
+  const getAllOpenDeals = () => {
+    return activeDeals.filter(d => d.status === 'open');
   };
 
   return {
@@ -232,6 +238,7 @@ export const useHandshake = (user: User | null) => {
     confirmHandover,
     cancelDeal,
     getOpenDeals,
+    getAllOpenDeals,
     refreshDeals: fetchDeals
   };
 };
