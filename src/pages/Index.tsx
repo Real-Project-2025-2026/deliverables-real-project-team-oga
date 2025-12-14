@@ -580,16 +580,22 @@ const Index = () => {
       paddingBottom: isStatsExpanded ? "14rem" : "7rem"
     }}>
         <div className="h-full px-3 sm:px-6 relative">
-          <Map 
-            parkingSpots={parkingSpots} 
-            currentLocation={currentLocation} 
-            onSpotClick={handleSpotClick} 
-            onMapReady={setMapInstance} 
-            manualPinLocation={manualPinLocation} 
-            onManualPinMove={setManualPinLocation}
-            handshakeDeals={getAllOpenDeals()}
-            onHandshakeDealClick={handleHandshakeDealClick}
-          />
+          {(() => {
+            const openDeals = getAllOpenDeals();
+            console.log('Passing handshake deals to Map:', openDeals);
+            return (
+              <Map 
+                parkingSpots={parkingSpots} 
+                currentLocation={currentLocation} 
+                onSpotClick={handleSpotClick} 
+                onMapReady={setMapInstance} 
+                manualPinLocation={manualPinLocation} 
+                onManualPinMove={setManualPinLocation}
+                handshakeDeals={openDeals}
+                onHandshakeDealClick={handleHandshakeDealClick}
+              />
+            );
+          })()}
         </div>
       </div>
 
