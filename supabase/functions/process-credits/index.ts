@@ -164,102 +164,85 @@ serve(async (req) => {
           });
         }
 
-        // Check if deal is ready for completion (both confirmed)
-        if (deal.status !== 'receiver_confirmed' && deal.status !== 'giver_confirmed') {
-          return new Response(JSON.stringify({ error: 'Deal not ready for completion' }), {
+        // Check if deal is in accepted status (new flow)
+        if (deal.status !== 'accepted') {
+          return new Response(JSON.stringify({ error: 'Deal not ready for completion. Status: ' + deal.status }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
 
-        // Determine who is confirming
-        const isGiver = user.id === deal.giver_id;
-        const isReceiver = user.id === deal.receiver_id;
-
-        if (!isGiver && !isReceiver) {
-          return new Response(JSON.stringify({ error: 'Not a participant in this deal' }), {
+        // Only the giver can complete the deal
+        if (user.id !== deal.giver_id) {
+          return new Response(JSON.stringify({ error: 'Only the giver can complete the deal' }), {
             status: 403,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
 
-        // Check if this confirmation completes the deal
-        let newStatus = deal.status;
-        if (isGiver && deal.status === 'receiver_confirmed') {
-          newStatus = 'completed';
-        } else if (isReceiver && deal.status === 'giver_confirmed') {
-          newStatus = 'completed';
-        } else if (isGiver && deal.status === 'accepted') {
-          newStatus = 'giver_confirmed';
-        } else if (isReceiver && deal.status === 'accepted') {
-          newStatus = 'receiver_confirmed';
-        }
+        // Complete the deal - distribute credits
+        console.log('Completing handshake deal, distributing credits');
+        
+        // Give giver +20 credits
+        const { data: giverCredits } = await supabase
+          .from('user_credits')
+          .select('balance')
+          .eq('user_id', deal.giver_id)
+          .single();
+        
+        await supabase
+          .from('user_credits')
+          .update({ balance: (giverCredits?.balance ?? 0) + 20 })
+          .eq('user_id', deal.giver_id);
 
-        // Update deal status
+        await supabase.from('credit_transactions').insert({
+          user_id: deal.giver_id,
+          amount: 20,
+          type: 'handshake_giver',
+          description: 'Handshake - Parkplatz übergeben',
+          related_spot_id: deal.spot_id,
+          related_user_id: deal.receiver_id
+        });
+
+        // Give receiver +10 credits
+        const { data: receiverCredits } = await supabase
+          .from('user_credits')
+          .select('balance')
+          .eq('user_id', deal.receiver_id)
+          .single();
+
+        await supabase
+          .from('user_credits')
+          .update({ balance: (receiverCredits?.balance ?? 0) + 10 })
+          .eq('user_id', deal.receiver_id);
+
+        await supabase.from('credit_transactions').insert({
+          user_id: deal.receiver_id,
+          amount: 10,
+          type: 'handshake_receiver',
+          description: 'Handshake - Parkplatz erhalten',
+          related_spot_id: deal.spot_id,
+          related_user_id: deal.giver_id
+        });
+
+        // Update deal status to completed
         await supabase
           .from('handshake_deals')
-          .update({ status: newStatus })
+          .update({ status: 'completed' })
           .eq('id', body.dealId);
 
-        // If completed, distribute credits
-        if (newStatus === 'completed') {
-          console.log('Completing handshake deal, distributing credits');
-          
-          // Give giver +20 credits
-          const { data: giverCredits } = await supabase
-            .from('user_credits')
-            .select('balance')
-            .eq('user_id', deal.giver_id)
-            .single();
-          
-          await supabase
-            .from('user_credits')
-            .update({ balance: (giverCredits?.balance ?? 0) + 20 })
-            .eq('user_id', deal.giver_id);
+        // Delete the parking spot (it's now handed over)
+        await supabase
+          .from('parking_spots')
+          .delete()
+          .eq('id', deal.spot_id);
 
-          await supabase.from('credit_transactions').insert({
-            user_id: deal.giver_id,
-            amount: 20,
-            type: 'handshake_giver',
-            description: 'Handshake - Parkplatz übergeben',
-            related_spot_id: deal.spot_id,
-            related_user_id: deal.receiver_id
-          });
-
-          // Give receiver +10 credits
-          const { data: receiverCredits } = await supabase
-            .from('user_credits')
-            .select('balance')
-            .eq('user_id', deal.receiver_id)
-            .single();
-
-          await supabase
-            .from('user_credits')
-            .update({ balance: (receiverCredits?.balance ?? 0) + 10 })
-            .eq('user_id', deal.receiver_id);
-
-          await supabase.from('credit_transactions').insert({
-            user_id: deal.receiver_id,
-            amount: 10,
-            type: 'handshake_receiver',
-            description: 'Handshake - Parkplatz erhalten',
-            related_spot_id: deal.spot_id,
-            related_user_id: deal.giver_id
-          });
-
-          // Delete the parking spot
-          await supabase
-            .from('parking_spots')
-            .delete()
-            .eq('id', deal.spot_id);
-
-          console.log('Handshake completed successfully');
-        }
+        console.log('Handshake completed successfully');
 
         return new Response(JSON.stringify({ 
           success: true,
-          status: newStatus,
-          completed: newStatus === 'completed'
+          status: 'completed',
+          completed: true
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });

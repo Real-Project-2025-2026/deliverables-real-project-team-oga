@@ -3,14 +3,17 @@ import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+export type HandshakeStatus = 'open' | 'pending_approval' | 'accepted' | 'giver_confirmed' | 'receiver_confirmed' | 'completed' | 'cancelled';
+
 export interface HandshakeDeal {
   id: string;
   spot_id: string;
   giver_id: string;
   receiver_id: string | null;
-  status: 'open' | 'accepted' | 'giver_confirmed' | 'receiver_confirmed' | 'completed' | 'cancelled';
+  status: HandshakeStatus;
   latitude: number;
   longitude: number;
+  departure_time: string | null;
   created_at: string;
 }
 
@@ -26,7 +29,7 @@ export const useHandshake = (user: User | null) => {
       const { data, error } = await supabase
         .from('handshake_deals')
         .select('*')
-        .in('status', ['open', 'accepted', 'giver_confirmed', 'receiver_confirmed']);
+        .in('status', ['open', 'pending_approval', 'accepted', 'giver_confirmed', 'receiver_confirmed']);
 
       if (error) {
         console.error('Error fetching deals:', error);
@@ -75,10 +78,12 @@ export const useHandshake = (user: User | null) => {
     };
   }, [user?.id]);
 
+  // Create handshake offer with departure time
   const createHandshakeOffer = async (
     spotId: string,
     latitude: number,
-    longitude: number
+    longitude: number,
+    departureTime: Date
   ): Promise<HandshakeDeal | null> => {
     if (!user) return null;
 
@@ -90,6 +95,7 @@ export const useHandshake = (user: User | null) => {
           giver_id: user.id,
           latitude,
           longitude,
+          departure_time: departureTime.toISOString(),
           status: 'open'
         })
         .select()
@@ -118,7 +124,8 @@ export const useHandshake = (user: User | null) => {
     }
   };
 
-  const acceptDeal = async (dealId: string): Promise<boolean> => {
+  // Receiver requests the deal (pending_approval)
+  const requestDeal = async (dealId: string): Promise<boolean> => {
     if (!user) return false;
 
     try {
@@ -126,35 +133,118 @@ export const useHandshake = (user: User | null) => {
         .from('handshake_deals')
         .update({
           receiver_id: user.id,
-          status: 'accepted'
+          status: 'pending_approval'
         })
         .eq('id', dealId)
         .eq('status', 'open');
 
       if (error) {
-        console.error('Error accepting deal:', error);
+        console.error('Error requesting deal:', error);
         toast({
           title: 'Fehler',
-          description: 'Deal konnte nicht angenommen werden.',
+          description: 'Deal konnte nicht angefragt werden.',
           variant: 'destructive'
         });
         return false;
       }
 
       toast({
-        title: 'Deal angenommen',
-        description: 'Koordiniere jetzt die Übergabe mit dem Geber.'
+        title: 'Anfrage gesendet',
+        description: 'Warte auf Bestätigung des Gebers.'
       });
 
       fetchDeals();
       return true;
     } catch (error) {
-      console.error('Error accepting deal:', error);
+      console.error('Error requesting deal:', error);
       return false;
     }
   };
 
-  const confirmHandover = async (dealId: string): Promise<boolean> => {
+  // Giver accepts the receiver's request
+  const acceptRequest = async (dealId: string): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      // Verify user is the giver
+      const { data: deal } = await supabase
+        .from('handshake_deals')
+        .select('*')
+        .eq('id', dealId)
+        .single();
+
+      if (!deal || deal.giver_id !== user.id) {
+        toast({
+          title: 'Fehler',
+          description: 'Du bist nicht der Geber dieses Deals.',
+          variant: 'destructive'
+        });
+        return false;
+      }
+
+      const { error } = await supabase
+        .from('handshake_deals')
+        .update({ status: 'accepted' })
+        .eq('id', dealId)
+        .eq('status', 'pending_approval');
+
+      if (error) {
+        console.error('Error accepting request:', error);
+        toast({
+          title: 'Fehler',
+          description: 'Anfrage konnte nicht akzeptiert werden.',
+          variant: 'destructive'
+        });
+        return false;
+      }
+
+      toast({
+        title: 'Anfrage akzeptiert',
+        description: 'Der Deal ist bestätigt. Bei Abfahrt wird der Platz übergeben.'
+      });
+
+      fetchDeals();
+      return true;
+    } catch (error) {
+      console.error('Error accepting request:', error);
+      return false;
+    }
+  };
+
+  // Giver declines the receiver's request
+  const declineRequest = async (dealId: string): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      const { error } = await supabase
+        .from('handshake_deals')
+        .update({ 
+          receiver_id: null,
+          status: 'open' 
+        })
+        .eq('id', dealId)
+        .eq('status', 'pending_approval');
+
+      if (error) {
+        console.error('Error declining request:', error);
+        return false;
+      }
+
+      toast({
+        title: 'Anfrage abgelehnt',
+        description: 'Der Deal ist wieder offen für andere.'
+      });
+
+      fetchDeals();
+      return true;
+    } catch (error) {
+      console.error('Error declining request:', error);
+      return false;
+    }
+  };
+
+  // Complete the deal (called by edge function or manually when departure time reached)
+  const completeDeal = async (dealId: string): Promise<boolean> => {
     if (!user) return false;
 
     try {
@@ -163,32 +253,25 @@ export const useHandshake = (user: User | null) => {
       });
 
       if (error || data?.error) {
-        console.error('Error confirming handover:', error || data?.error);
+        console.error('Error completing deal:', error || data?.error);
         toast({
           title: 'Fehler',
-          description: 'Bestätigung fehlgeschlagen.',
+          description: 'Deal konnte nicht abgeschlossen werden.',
           variant: 'destructive'
         });
         return false;
       }
 
-      if (data.completed) {
-        toast({
-          title: 'Handshake abgeschlossen! 🎉',
-          description: 'Credits wurden verteilt.'
-        });
-        setMyDeal(null);
-      } else {
-        toast({
-          title: 'Bestätigt',
-          description: 'Warte auf Bestätigung des Partners.'
-        });
-      }
-
+      toast({
+        title: 'Handshake abgeschlossen! 🎉',
+        description: 'Credits wurden verteilt.'
+      });
+      
+      setMyDeal(null);
       fetchDeals();
       return true;
     } catch (error) {
-      console.error('Error confirming handover:', error);
+      console.error('Error completing deal:', error);
       return false;
     }
   };
@@ -236,8 +319,10 @@ export const useHandshake = (user: User | null) => {
     myDeal,
     isLoading,
     createHandshakeOffer,
-    acceptDeal,
-    confirmHandover,
+    requestDeal,
+    acceptRequest,
+    declineRequest,
+    completeDeal,
     cancelDeal,
     getOpenDeals,
     getAllOpenDeals,

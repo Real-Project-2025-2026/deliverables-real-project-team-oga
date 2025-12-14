@@ -2,14 +2,18 @@ import { HandshakeDeal } from '@/hooks/useHandshake';
 import { User } from '@supabase/supabase-js';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Handshake, CheckCircle, Clock, X } from 'lucide-react';
+import { Handshake, CheckCircle, Clock, X, UserCheck, UserX } from 'lucide-react';
+import { format } from 'date-fns';
+import { de } from 'date-fns/locale';
 
 interface HandshakeDialogProps {
   deal: HandshakeDeal | null;
   user: User | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
+  onAcceptRequest: () => void;
+  onDeclineRequest: () => void;
+  onComplete: () => void;
   onCancel: () => void;
 }
 
@@ -18,13 +22,17 @@ const HandshakeDialog = ({
   user, 
   open, 
   onOpenChange, 
-  onConfirm, 
+  onAcceptRequest,
+  onDeclineRequest,
+  onComplete,
   onCancel 
 }: HandshakeDialogProps) => {
   if (!deal || !user) return null;
 
   const isGiver = user.id === deal.giver_id;
   const isReceiver = user.id === deal.receiver_id;
+  const departureTime = deal.departure_time ? new Date(deal.departure_time) : null;
+  const isPastDeparture = departureTime && new Date() >= departureTime;
 
   const getStatusText = () => {
     switch (deal.status) {
@@ -32,16 +40,19 @@ const HandshakeDialog = ({
         return isGiver 
           ? 'Warte auf einen Interessenten...' 
           : 'Deal verfügbar';
-      case 'accepted':
-        return 'Deal akzeptiert - Koordiniert die Übergabe';
-      case 'giver_confirmed':
+      case 'pending_approval':
         return isGiver 
-          ? 'Du hast bestätigt. Warte auf Empfänger.' 
-          : 'Geber hat bestätigt. Bitte bestätige auch.';
-      case 'receiver_confirmed':
-        return isReceiver 
-          ? 'Du hast bestätigt. Warte auf Geber.' 
-          : 'Empfänger hat bestätigt. Bitte bestätige auch.';
+          ? 'Jemand möchte deinen Parkplatz! Akzeptierst du?' 
+          : 'Warte auf Bestätigung des Gebers...';
+      case 'accepted':
+        if (isPastDeparture) {
+          return isGiver 
+            ? 'Abfahrtszeit erreicht! Bitte bestätige die Übergabe.'
+            : 'Abfahrtszeit erreicht! Warte auf Übergabe.';
+        }
+        return departureTime 
+          ? `Deal bestätigt - Übergabe um ${format(departureTime, 'HH:mm', { locale: de })} Uhr`
+          : 'Deal akzeptiert';
       case 'completed':
         return 'Handshake abgeschlossen! 🎉';
       case 'cancelled':
@@ -51,17 +62,14 @@ const HandshakeDialog = ({
     }
   };
 
-  const canConfirm = () => {
-    if (deal.status === 'accepted') return true;
-    if (deal.status === 'giver_confirmed' && isReceiver) return true;
-    if (deal.status === 'receiver_confirmed' && isGiver) return true;
-    return false;
-  };
-
-  const hasConfirmed = () => {
-    if (deal.status === 'giver_confirmed' && isGiver) return true;
-    if (deal.status === 'receiver_confirmed' && isReceiver) return true;
-    return false;
+  const getStatusIcon = () => {
+    if (deal.status === 'completed') {
+      return <CheckCircle className="h-5 w-5 text-green-500" />;
+    }
+    if (deal.status === 'pending_approval') {
+      return <UserCheck className="h-5 w-5 text-amber-500" />;
+    }
+    return <Clock className="h-5 w-5 text-primary" />;
   };
 
   return (
@@ -78,13 +86,19 @@ const HandshakeDialog = ({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Departure Time */}
+          {departureTime && (
+            <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+              <p className="text-sm text-muted-foreground">Abfahrtszeit:</p>
+              <p className="text-lg font-bold text-primary">
+                {format(departureTime, "HH:mm 'Uhr'", { locale: de })}
+              </p>
+            </div>
+          )}
+
           {/* Status */}
           <div className="flex items-center gap-2 p-3 rounded-lg bg-muted">
-            {deal.status === 'completed' ? (
-              <CheckCircle className="h-5 w-5 text-success" />
-            ) : (
-              <Clock className="h-5 w-5 text-primary" />
-            )}
+            {getStatusIcon()}
             <span className="text-sm">{getStatusText()}</span>
           </div>
 
@@ -99,9 +113,52 @@ const HandshakeDialog = ({
             </div>
           </div>
 
-          {/* Actions */}
+          {/* Actions based on status */}
           <div className="flex gap-2">
-            {deal.status !== 'completed' && deal.status !== 'cancelled' && (
+            {/* Giver: Accept or decline pending request */}
+            {deal.status === 'pending_approval' && isGiver && (
+              <>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={onDeclineRequest}
+                >
+                  <UserX className="h-4 w-4 mr-2" />
+                  Ablehnen
+                </Button>
+                <Button
+                  className="flex-1"
+                  onClick={onAcceptRequest}
+                >
+                  <UserCheck className="h-4 w-4 mr-2" />
+                  Akzeptieren
+                </Button>
+              </>
+            )}
+
+            {/* Receiver: Waiting for giver approval */}
+            {deal.status === 'pending_approval' && isReceiver && (
+              <>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={onCancel}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Anfrage zurückziehen
+                </Button>
+                <Button
+                  className="flex-1"
+                  disabled
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  Warte auf Geber
+                </Button>
+              </>
+            )}
+
+            {/* Deal accepted - waiting for departure time or ready to complete */}
+            {deal.status === 'accepted' && (
               <>
                 <Button
                   variant="outline"
@@ -111,27 +168,46 @@ const HandshakeDialog = ({
                   <X className="h-4 w-4 mr-2" />
                   Abbrechen
                 </Button>
-                
-                {canConfirm() && !hasConfirmed() && (
+                {isGiver && isPastDeparture && (
                   <Button
                     className="flex-1"
-                    onClick={onConfirm}
+                    onClick={onComplete}
                   >
                     <CheckCircle className="h-4 w-4 mr-2" />
-                    Übergabe bestätigen
+                    Übergabe abschließen
                   </Button>
                 )}
-                
-                {hasConfirmed() && (
+                {isGiver && !isPastDeparture && (
                   <Button
                     className="flex-1"
                     disabled
                   >
                     <Clock className="h-4 w-4 mr-2" />
-                    Warte auf Partner
+                    Warte auf Abfahrtszeit
+                  </Button>
+                )}
+                {isReceiver && (
+                  <Button
+                    className="flex-1"
+                    disabled
+                  >
+                    <Clock className="h-4 w-4 mr-2" />
+                    Warte auf Übergabe
                   </Button>
                 )}
               </>
+            )}
+
+            {/* Open deal - only cancel for giver */}
+            {deal.status === 'open' && isGiver && (
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={onCancel}
+              >
+                <X className="h-4 w-4 mr-2" />
+                Angebot zurückziehen
+              </Button>
             )}
           </div>
         </div>
