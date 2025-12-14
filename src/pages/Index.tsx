@@ -7,17 +7,19 @@ import AuthDialog from "@/components/AuthDialog";
 import { useToast } from "@/hooks/use-toast";
 import { usePresence } from "@/hooks/usePresence";
 import { useCredits } from "@/hooks/useCredits";
-import { useHandshake } from "@/hooks/useHandshake";
+import { useHandshake, HandshakeDeal } from "@/hooks/useHandshake";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDistanceToNow, differenceInMinutes } from "date-fns";
 import { calculateDistance } from "@/lib/utils";
-import { Clock, Locate, ChevronUp, ChevronDown, ArrowLeft, Navigation, MapPin, Handshake } from "lucide-react";
+import { Clock, Locate, ChevronUp, ChevronDown, ArrowLeft, Navigation, MapPin, Handshake as HandshakeIcon } from "lucide-react";
 import AccountMenu from "@/components/AccountMenu";
 import LeavingOptionsDialog from "@/components/LeavingOptionsDialog";
 import HandshakeDialog from "@/components/HandshakeDialog";
+import HandshakeOfferDialog from "@/components/HandshakeOfferDialog";
+import HandshakeRequestDialog from "@/components/HandshakeRequestDialog";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -90,12 +92,19 @@ const Index = () => {
     myDeal, 
     activeDeals, 
     createHandshakeOffer, 
-    acceptDeal, 
-    confirmHandover, 
+    requestDeal,
+    acceptRequest,
+    declineRequest,
+    completeDeal, 
     cancelDeal,
     getOpenDeals,
     getAllOpenDeals 
   } = useHandshake(user);
+
+  // Additional state for new handshake flow
+  const [showHandshakeOfferDialog, setShowHandshakeOfferDialog] = useState(false);
+  const [showHandshakeRequestDialog, setShowHandshakeRequestDialog] = useState(false);
+  const [selectedDealForRequest, setSelectedDealForRequest] = useState<HandshakeDeal | null>(null);
 
   // Auth state management
   useEffect(() => {
@@ -379,6 +388,12 @@ const Index = () => {
 
   const handleHandshakeOffer = async () => {
     if (!userParking || !user) return;
+    setShowLeavingOptions(false);
+    setShowHandshakeOfferDialog(true);
+  };
+
+  const handleCreateHandshakeOffer = async (departureTime: Date) => {
+    if (!userParking || !user) return;
 
     // Get spot coordinates
     const spot = parkingSpots.find(s => s.id === userParking.spotId);
@@ -387,21 +402,33 @@ const Index = () => {
     const deal = await createHandshakeOffer(
       userParking.spotId,
       spot.coordinates[1],
-      spot.coordinates[0]
+      spot.coordinates[0],
+      departureTime
     );
 
     if (deal) {
-      setShowLeavingOptions(false);
+      setShowHandshakeOfferDialog(false);
       setShowHandshakeDialog(true);
     }
   };
 
-  const handleConfirmHandover = async () => {
+  const handleAcceptRequest = async () => {
     if (!myDeal) return;
-    await confirmHandover(myDeal.id);
-    
-    // If deal is completed, clear user parking
-    if (myDeal.status === 'completed' || myDeal.status === 'receiver_confirmed') {
+    const success = await acceptRequest(myDeal.id);
+    if (success) {
+      // Stay in dialog to show updated status
+    }
+  };
+
+  const handleDeclineRequest = async () => {
+    if (!myDeal) return;
+    await declineRequest(myDeal.id);
+  };
+
+  const handleCompleteDeal = async () => {
+    if (!myDeal) return;
+    const success = await completeDeal(myDeal.id);
+    if (success) {
       setUserParking(null);
       setShowHandshakeDialog(false);
     }
@@ -413,15 +440,13 @@ const Index = () => {
     setShowHandshakeDialog(false);
   };
 
-  const [selectedHandshakeDeal, setSelectedHandshakeDeal] = useState<string | null>(null);
-
   const handleHandshakeDealClick = async (dealId: string) => {
     if (!user) {
       setShowAuthDialog(true);
       return;
     }
 
-    // Check if this is the user's own deal - show the dialog instead of error
+    // Check if this is the user's own deal - show the dialog
     if (myDeal && myDeal.id === dealId) {
       setShowHandshakeDialog(true);
       return;
@@ -436,14 +461,22 @@ const Index = () => {
 
     // Can't accept own deal (double check with giver_id)
     if (deal.giver_id === user.id) {
-      // This is the user's own offer - just show the handshake dialog
+      // This is the user's own offer - show the handshake dialog
       setShowHandshakeDialog(true);
       return;
     }
 
-    // Accept the deal
-    const success = await acceptDeal(dealId);
+    // Show request dialog for the receiver
+    setSelectedDealForRequest(deal);
+    setShowHandshakeRequestDialog(true);
+  };
+
+  const handleRequestDeal = async () => {
+    if (!selectedDealForRequest) return;
+    const success = await requestDeal(selectedDealForRequest.id);
     if (success) {
+      setShowHandshakeRequestDialog(false);
+      setSelectedDealForRequest(null);
       setShowHandshakeDialog(true);
     }
   };
@@ -608,7 +641,7 @@ const Index = () => {
                 className="touch-target relative"
                 aria-label="Active handshake deal"
               >
-                <Handshake className="h-5 w-5 text-primary" />
+                <HandshakeIcon className="h-5 w-5 text-primary" />
                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse" />
               </Button>
             )}
@@ -818,8 +851,25 @@ const Index = () => {
         user={user}
         open={showHandshakeDialog}
         onOpenChange={setShowHandshakeDialog}
-        onConfirm={handleConfirmHandover}
+        onAcceptRequest={handleAcceptRequest}
+        onDeclineRequest={handleDeclineRequest}
+        onComplete={handleCompleteDeal}
         onCancel={handleCancelDeal}
+      />
+
+      {/* Handshake Offer Dialog (for giver to set departure time) */}
+      <HandshakeOfferDialog
+        open={showHandshakeOfferDialog}
+        onOpenChange={setShowHandshakeOfferDialog}
+        onOffer={handleCreateHandshakeOffer}
+      />
+
+      {/* Handshake Request Dialog (for receiver to request a deal) */}
+      <HandshakeRequestDialog
+        deal={selectedDealForRequest}
+        open={showHandshakeRequestDialog}
+        onOpenChange={setShowHandshakeRequestDialog}
+        onRequest={handleRequestDeal}
       />
     </div>;
 };

@@ -77,6 +77,7 @@ export type Database = {
       handshake_deals: {
         Row: {
           created_at: string
+          departure_time: string | null
           expires_at: string | null
           giver_id: string
           id: string
@@ -89,6 +90,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          departure_time?: string | null
           expires_at?: string | null
           giver_id: string
           id?: string
@@ -101,6 +103,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          departure_time?: string | null
           expires_at?: string | null
           giver_id?: string
           id?: string
@@ -315,6 +318,7 @@ export type Database = {
         | "membership_bonus"
       handshake_status:
         | "open"
+        | "pending_approval"
         | "accepted"
         | "giver_confirmed"
         | "receiver_confirmed"
@@ -457,6 +461,7 @@ export const Constants = {
       ],
       handshake_status: [
         "open",
+        "pending_approval",
         "accepted",
         "giver_confirmed",
         "receiver_confirmed",
