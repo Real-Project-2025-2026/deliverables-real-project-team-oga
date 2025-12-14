@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { User } from "@supabase/supabase-js";
 import { LogOut, User as UserIcon, ChevronDown, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -10,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AccountMenuProps {
   user: User;
@@ -17,8 +19,47 @@ interface AccountMenuProps {
 }
 
 const AccountMenu = ({ user, onSignOut }: AccountMenuProps) => {
-  const displayName = user.email?.split("@")[0] || "User";
-  
+  const [displayName, setDisplayName] = useState<string>(user.email?.split("@")[0] || "User");
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (data?.display_name) {
+        setDisplayName(data.display_name);
+      }
+    };
+
+    fetchProfile();
+
+    // Subscribe to profile changes
+    const channel = supabase
+      .channel("profile-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          if (payload.new && (payload.new as any).display_name) {
+            setDisplayName((payload.new as any).display_name);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user.id]);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -33,7 +74,7 @@ const AccountMenu = ({ user, onSignOut }: AccountMenuProps) => {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Account</p>
+            <p className="text-sm font-medium leading-none">{displayName}</p>
             <p className="text-xs text-muted-foreground truncate">{user.email}</p>
           </div>
         </DropdownMenuLabel>
