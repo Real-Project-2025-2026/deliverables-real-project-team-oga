@@ -394,17 +394,23 @@ const Index = () => {
       return;
     }
 
-    // Find the deal
-    const deal = activeDeals.find(d => d.id === dealId);
-    if (!deal) return;
+    // Check if this is the user's own deal - show the dialog instead of error
+    if (myDeal && myDeal.id === dealId) {
+      setShowHandshakeDialog(true);
+      return;
+    }
 
-    // Can't accept own deal
+    // Find the deal from all active deals
+    const deal = activeDeals.find(d => d.id === dealId);
+    if (!deal) {
+      console.log('Deal not found:', dealId, 'Available deals:', activeDeals);
+      return;
+    }
+
+    // Can't accept own deal (double check with giver_id)
     if (deal.giver_id === user.id) {
-      toast({
-        title: "Das ist dein eigenes Angebot",
-        description: "Du kannst dein eigenes Handshake-Angebot nicht annehmen.",
-        variant: "destructive"
-      });
+      // This is the user's own offer - just show the handshake dialog
+      setShowHandshakeDialog(true);
       return;
     }
 

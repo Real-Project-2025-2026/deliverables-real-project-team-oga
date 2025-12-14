@@ -250,15 +250,23 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
     }
   }, [currentLocation, isMapLoaded]);
 
-  // Update parking spot markers
+  // Update parking spot markers (excluding spots with active handshake deals)
   useEffect(() => {
     if (!map.current || !isMapLoaded) return;
+
+    // Get spot IDs that have active handshake deals
+    const handshakeSpotIds = new Set(handshakeDeals.filter(d => d.status === 'open').map(d => d.spot_id));
 
     Object.values(markers.current).forEach(marker => marker.remove());
     markers.current = {};
 
     parkingSpots.forEach(spot => {
       if (!map.current) return;
+      
+      // Skip spots that have an active handshake deal - they'll get handshake markers instead
+      if (handshakeSpotIds.has(spot.id)) {
+        return;
+      }
 
       const el = document.createElement('div');
       el.innerHTML = `
@@ -282,7 +290,7 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
 
       markers.current[spot.id] = marker;
     });
-  }, [parkingSpots, isMapLoaded, onSpotClick]);
+  }, [parkingSpots, isMapLoaded, onSpotClick, handshakeDeals]);
 
   // Update handshake deal markers
   useEffect(() => {
