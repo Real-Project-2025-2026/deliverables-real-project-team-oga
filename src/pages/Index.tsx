@@ -66,7 +66,8 @@ const Index = () => {
     acceptDeal, 
     confirmHandover, 
     cancelDeal,
-    getOpenDeals 
+    getOpenDeals,
+    getAllOpenDeals 
   } = useHandshake(user);
 
   // Auth state management
@@ -586,7 +587,7 @@ const Index = () => {
             onMapReady={setMapInstance} 
             manualPinLocation={manualPinLocation} 
             onManualPinMove={setManualPinLocation}
-            handshakeDeals={getOpenDeals()}
+            handshakeDeals={getAllOpenDeals()}
             onHandshakeDealClick={handleHandshakeDealClick}
           />
         </div>
