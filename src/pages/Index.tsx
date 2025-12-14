@@ -12,7 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDistanceToNow, differenceInMinutes } from "date-fns";
 import { calculateDistance } from "@/lib/utils";
-import { Clock, Locate, LogOut, ChevronUp, ChevronDown, ArrowLeft, Navigation, MapPin } from "lucide-react";
+import { Clock, Locate, ChevronUp, ChevronDown, ArrowLeft, Navigation, MapPin } from "lucide-react";
+import AccountMenu from "@/components/AccountMenu";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 interface ParkingSpot {
@@ -447,12 +448,13 @@ const Index = () => {
               <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Find & Share Free Parking</p>
             </div>
           </div>
-          {user ? <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-2 touch-target">
-              <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline">Sign Out</span>
-            </Button> : <Button variant="outline" size="sm" onClick={() => setShowAuthDialog(true)} className="touch-target">
+          {user ? (
+            <AccountMenu user={user} onSignOut={handleSignOut} />
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => setShowAuthDialog(true)} className="touch-target">
               Sign In
-            </Button>}
+            </Button>
+          )}
         </div>
       </div>
 
