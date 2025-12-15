@@ -83,6 +83,12 @@ const translations = {
     "app.error": "Fehler",
     "app.errorTakeSpot": "Konnte diesen Parkplatz nicht übernehmen.",
     "app.errorCreateSpot": "Konnte Parkplatz nicht erstellen.",
+    "app.availabilityChance": "Verfügbarkeits-Chance",
+    "app.probabilityVeryHigh": "Sehr hoch",
+    "app.probabilityHigh": "Hoch",
+    "app.probabilityMedium": "Mittel",
+    "app.probabilityLow": "Niedrig",
+    "app.probabilityVeryLow": "Sehr niedrig",
   },
   en: {
     // Header
@@ -158,6 +164,12 @@ const translations = {
     "app.error": "Error",
     "app.errorTakeSpot": "Could not take this parking spot.",
     "app.errorCreateSpot": "Could not create parking spot.",
+    "app.availabilityChance": "Availability Chance",
+    "app.probabilityVeryHigh": "Very High",
+    "app.probabilityHigh": "High",
+    "app.probabilityMedium": "Medium",
+    "app.probabilityLow": "Low",
+    "app.probabilityVeryLow": "Very Low",
   },
 };
 

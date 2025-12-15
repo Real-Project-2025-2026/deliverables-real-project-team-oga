@@ -15,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDistanceToNow, differenceInMinutes } from "date-fns";
 import { calculateDistance } from "@/lib/utils";
+import { calculateParkingProbability } from "@/lib/parkingProbability";
+import { ProbabilityBar } from "@/components/ProbabilityBar";
 import { Clock, Locate, ChevronUp, ChevronDown, ArrowLeft, Navigation, MapPin, Handshake as HandshakeIcon } from "lucide-react";
 import AccountMenu from "@/components/AccountMenu";
 import LeavingOptionsDialog from "@/components/LeavingOptionsDialog";
@@ -804,6 +806,12 @@ const Index = () => {
               <strong className="text-foreground">Available for:</strong>{" "}
               {selectedSpot?.availableSince && formatDistanceToNow(selectedSpot.availableSince)}
             </div>
+            {selectedSpot?.availableSince && (
+              <div className="pt-2">
+                <strong className="text-foreground">{t("app.availabilityChance")}:</strong>
+                <ProbabilityBar probability={calculateParkingProbability(selectedSpot.availableSince)} />
+              </div>
+            )}
           </div>
           <div className="space-y-2 pt-4">
             {/* Navigation Buttons - OS-based primary/secondary */}
