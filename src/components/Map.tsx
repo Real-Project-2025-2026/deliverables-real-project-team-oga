@@ -206,15 +206,34 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
     initMap();
   }, [mapboxToken, onMapReady, handleClearToken, onManualPinMove, currentLocation, status]);
 
-  // Update manual pin
+  // Update manual pin - create if needed, update position, or remove
   useEffect(() => {
-    if (manualPinLocation && manualPinMarker.current) {
-      manualPinMarker.current.setLngLat(manualPinLocation);
-    } else if (!manualPinLocation && manualPinMarker.current) {
+    if (!map.current || !isMapLoaded) return;
+
+    if (manualPinLocation) {
+      // Create marker if it doesn't exist
+      if (!manualPinMarker.current) {
+        const el = document.createElement('div');
+        el.style.cssText = 'pointer-events: none; display: flex; align-items: center; justify-content: center;';
+        el.innerHTML = `
+          <svg width="40" height="48" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 20 12 20s12-11 12-20c0-6.627-5.373-12-12-12z" 
+                  fill="hsl(142, 76%, 36%)" 
+                  stroke="white" stroke-width="2"/>
+            <circle cx="12" cy="12" r="4" fill="white"/>
+          </svg>
+        `;
+        manualPinMarker.current = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
+          .setLngLat(manualPinLocation)
+          .addTo(map.current);
+      } else {
+        manualPinMarker.current.setLngLat(manualPinLocation);
+      }
+    } else if (manualPinMarker.current) {
       manualPinMarker.current.remove();
       manualPinMarker.current = null;
     }
-  }, [manualPinLocation]);
+  }, [manualPinLocation, isMapLoaded]);
 
   // Update current location marker
   useEffect(() => {
