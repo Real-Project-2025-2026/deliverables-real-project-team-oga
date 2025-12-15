@@ -231,6 +231,18 @@ serve(async (req) => {
           .update({ status: 'completed' })
           .eq('id', body.dealId);
 
+        // Save parking history for the giver
+        const now = new Date();
+        await supabase.from('parking_history').insert({
+          user_id: deal.giver_id,
+          spot_id: deal.spot_id,
+          latitude: deal.latitude,
+          longitude: deal.longitude,
+          started_at: deal.created_at, // Use deal creation as approximate parking start
+          ended_at: now.toISOString(),
+          duration_minutes: Math.round((now.getTime() - new Date(deal.created_at).getTime()) / 60000)
+        });
+
         // Transfer the parking spot to the receiver (mark as unavailable, receiver now owns it)
         await supabase
           .from('parking_spots')
@@ -240,7 +252,7 @@ serve(async (req) => {
           })
           .eq('id', deal.spot_id);
 
-        console.log('Handshake completed successfully');
+        console.log('Handshake completed successfully, parking history saved for giver');
 
         return new Response(JSON.stringify({ 
           success: true,
