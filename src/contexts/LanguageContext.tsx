@@ -60,6 +60,29 @@ const translations = {
     // Footer
     "footer.tagline": "– Team OGA",
     "footer.copyright": "© 2024 OGAP. Parken einfach gemacht.",
+    
+    // App
+    "app.spotTaken": "Parkplatz übernommen",
+    "app.spotTakenDesc": "Du hast den Parkplatz übernommen.",
+    "app.newSpotReported": "Neuer Parkplatz gemeldet!",
+    "app.creditsReceived": "+4 Credits erhalten!",
+    "app.setSpotTitle": "Neuen Parkplatz melden",
+    "app.setSpotDesc": "Du meldest einen neuen Parkplatz an dieser Position.",
+    "app.setSpotHint": "Du erhältst +4 Credits für das Melden eines neuen Parkplatzes!",
+    "app.setSpotButton": "Parkplatz melden",
+    "app.takeSpot": "Parkplatz nehmen",
+    "app.spotsAvailable": "Parkplätze verfügbar",
+    "app.hideStats": "Statistiken ausblenden",
+    "app.mapRecentered": "Karte zentriert",
+    "app.mapRecenteredDesc": "Auf deinen aktuellen Standort zentriert.",
+    "app.signedOut": "Abgemeldet",
+    "app.signedOutDesc": "Du wurdest erfolgreich abgemeldet.",
+    "app.openInAppleMaps": "In Apple Maps öffnen",
+    "app.openInGoogleMaps": "In Google Maps öffnen",
+    "app.parkingTimer": "Park-Timer",
+    "app.error": "Fehler",
+    "app.errorTakeSpot": "Konnte diesen Parkplatz nicht übernehmen.",
+    "app.errorCreateSpot": "Konnte Parkplatz nicht erstellen.",
   },
   en: {
     // Header
@@ -112,6 +135,29 @@ const translations = {
     // Footer
     "footer.tagline": "– Team OGA",
     "footer.copyright": "© 2024 OGAP. Make Parking Simple.",
+    
+    // App
+    "app.spotTaken": "Spot Taken",
+    "app.spotTakenDesc": "You have taken this parking spot.",
+    "app.newSpotReported": "New Spot Reported!",
+    "app.creditsReceived": "+4 Credits received!",
+    "app.setSpotTitle": "Report New Parking Spot",
+    "app.setSpotDesc": "You are reporting a new parking spot at this location.",
+    "app.setSpotHint": "You will receive +4 Credits for reporting a new parking spot!",
+    "app.setSpotButton": "Report Spot",
+    "app.takeSpot": "Take This Spot",
+    "app.spotsAvailable": "spots available",
+    "app.hideStats": "Hide stats",
+    "app.mapRecentered": "Map Recentered",
+    "app.mapRecenteredDesc": "Centered on your current location.",
+    "app.signedOut": "Signed Out",
+    "app.signedOutDesc": "You've been signed out successfully.",
+    "app.openInAppleMaps": "Open in Apple Maps",
+    "app.openInGoogleMaps": "Open in Google Maps",
+    "app.parkingTimer": "Parking Timer",
+    "app.error": "Error",
+    "app.errorTakeSpot": "Could not take this parking spot.",
+    "app.errorCreateSpot": "Could not create parking spot.",
   },
 };
 

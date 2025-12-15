@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePresence } from "@/hooks/usePresence";
 import { useCredits } from "@/hooks/useCredits";
 import { useHandshake, HandshakeDeal } from "@/hooks/useHandshake";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,7 @@ const PARKING_SESSION_KEY = 'ogap_parking_session';
 
 const Index = () => {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const activeUsers = usePresence();
   const [currentLocation, setCurrentLocation] = useState<[number, number]>([11.58, 48.155]);
   const [parkingSpots, setParkingSpots] = useState<ParkingSpot[]>([]);
@@ -557,84 +559,87 @@ const Index = () => {
 
   const handleConfirmParking = async () => {
     const now = new Date();
-    if (selectedSpot) {
-      // Taking an existing spot - update in database
-      const {
-        error
-      } = await supabase.from("parking_spots").update({
-        available: false,
-        available_since: null
-      }).eq("id", selectedSpot.id);
-      if (error) {
-        console.error("Error updating spot:", error);
-        toast({
-          title: "Error",
-          description: "Could not take this parking spot.",
-          variant: "destructive"
-        });
-        return;
-      }
-      setUserParking({
-        spotId: selectedSpot.id,
-        parkingTime: now,
-        returnTime: null,
-        durationMinutes: null
-      });
-      setSelectedSpot(null);
+    // Creating a new spot at manual pin location or current location
+    const spotLocation = manualPinLocation || currentLocation;
+    const newSpotId = `user-${Date.now()}`;
+    const {
+      error
+    } = await supabase.from("parking_spots").insert({
+      id: newSpotId,
+      latitude: spotLocation[1],
+      longitude: spotLocation[0],
+      available: false,
+      available_since: null
+    });
+    if (error) {
+      console.error("Error creating spot:", error);
       toast({
-        title: "Parkplatz gesetzt",
-        description: "Du hast den Parkplatz übernommen."
+        title: t("app.error"),
+        description: t("app.errorCreateSpot"),
+        variant: "destructive"
       });
-    } else {
-      // Creating a new spot at manual pin location or current location
-      const spotLocation = manualPinLocation || currentLocation;
-      const newSpotId = `user-${Date.now()}`;
-      const {
-        error
-      } = await supabase.from("parking_spots").insert({
-        id: newSpotId,
-        latitude: spotLocation[1],
-        longitude: spotLocation[0],
-        available: false,
-        available_since: null
-      });
-      if (error) {
-        console.error("Error creating spot:", error);
-        toast({
-          title: "Error",
-          description: "Could not create parking spot.",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      // Award +4 credits for reporting a new spot
-      try {
-        const response = await supabase.functions.invoke('process-credits', {
-          body: { action: 'new_spot_reported', spotId: newSpotId }
-        });
-        if (response.error) {
-          console.error('Error awarding credits:', response.error);
-        } else {
-          refreshCredits();
-        }
-      } catch (e) {
-        console.error('Error calling process-credits:', e);
-      }
-      
-      setUserParking({
-        spotId: newSpotId,
-        parkingTime: now,
-        returnTime: null,
-        durationMinutes: null
-      });
-      toast({
-        title: "Neuer Parkplatz gemeldet!",
-        description: "+4 Credits erhalten!"
-      });
+      return;
     }
+    
+    // Award +4 credits for reporting a new spot
+    try {
+      const response = await supabase.functions.invoke('process-credits', {
+        body: { action: 'new_spot_reported', spotId: newSpotId }
+      });
+      if (response.error) {
+        console.error('Error awarding credits:', response.error);
+      } else {
+        refreshCredits();
+      }
+    } catch (e) {
+      console.error('Error calling process-credits:', e);
+    }
+    
+    setUserParking({
+      spotId: newSpotId,
+      parkingTime: now,
+      returnTime: null,
+      durationMinutes: null
+    });
+    toast({
+      title: t("app.newSpotReported"),
+      description: t("app.creditsReceived")
+    });
     setShowTimerDialog(false);
     setManualPinLocation(null);
+  };
+
+  const handleTakeExistingSpot = async () => {
+    if (!selectedSpot) return;
+    
+    const now = new Date();
+    // Taking an existing spot - update in database directly
+    const {
+      error
+    } = await supabase.from("parking_spots").update({
+      available: false,
+      available_since: null
+    }).eq("id", selectedSpot.id);
+    if (error) {
+      console.error("Error updating spot:", error);
+      toast({
+        title: t("app.error"),
+        description: t("app.errorTakeSpot"),
+        variant: "destructive"
+      });
+      return;
+    }
+    setUserParking({
+      spotId: selectedSpot.id,
+      parkingTime: now,
+      returnTime: null,
+      durationMinutes: null
+    });
+    setSelectedSpot(null);
+    toast({
+      title: t("app.spotTaken"),
+      description: t("app.spotTakenDesc")
+    });
   };
   const handleSpotClick = (spotId: string) => {
     const spot = parkingSpots.find(s => s.id === spotId);
@@ -642,7 +647,7 @@ const Index = () => {
       setSelectedSpot(spot);
     }
   };
-  const handleTakeSpot = () => {
+  const handleTakeSpot = async () => {
     if (!selectedSpot) return;
     // Check if user is authenticated before allowing to take a spot
     if (!user) {
@@ -650,14 +655,16 @@ const Index = () => {
       setShowAuthDialog(true);
       return;
     }
-    setShowTimerDialog(true);
+    // Directly take the existing spot without showing timer dialog
+    await handleTakeExistingSpot();
   };
   const handleAuthSuccess = () => {
     // Execute pending action after successful auth
     if (pendingAction === "park") {
       setShowTimerDialog(true);
     } else if (pendingAction === "take" && selectedSpot) {
-      setShowTimerDialog(true);
+      // Directly take the spot after auth
+      handleTakeExistingSpot();
     }
     setPendingAction(null);
   };
@@ -665,8 +672,8 @@ const Index = () => {
     await supabase.auth.signOut();
     setUserParking(null);
     toast({
-      title: "Signed Out",
-      description: "You've been signed out successfully."
+      title: t("app.signedOut"),
+      description: t("app.signedOutDesc")
     });
   };
   const handleRecenter = () => {
@@ -677,8 +684,8 @@ const Index = () => {
         duration: 1000
       });
       toast({
-        title: "Map Recentered",
-        description: "Centered on your current location."
+        title: t("app.mapRecentered"),
+        description: t("app.mapRecenteredDesc")
       });
     }
   };
@@ -825,7 +832,7 @@ const Index = () => {
                       className="w-full gap-2"
                     >
                       <Navigation className="h-4 w-4" />
-                      Navigate with Google Maps
+                      {t("app.openInGoogleMaps")}
                     </Button>
                     <Button 
                       onClick={() => handleNavigateToSpot(selectedSpot, 'apple')} 
@@ -834,38 +841,38 @@ const Index = () => {
                       className="w-full gap-2 text-muted-foreground"
                     >
                       <MapPin className="h-4 w-4" />
-                      Open in Apple Maps
+                      {t("app.openInAppleMaps")}
                     </Button>
                   </>
                 )}
               </>
             )}
             <Button onClick={handleTakeSpot} size="lg" className="w-full">
-              Take This Spot
+              {t("app.takeSpot")}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Set Parking Spot Dialog */}
+      {/* Report New Parking Spot Dialog - only shown when creating new spots */}
       <Dialog open={showTimerDialog} onOpenChange={setShowTimerDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Parkplatz setzen</DialogTitle>
+            <DialogTitle>{t("app.setSpotTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Du parkst hier? Bestätige deinen Parkplatz.
+              {t("app.setSpotDesc")}
             </p>
             <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 text-sm text-primary">
-              <strong>Tipp:</strong> Wenn du einen komplett neuen Parkplatz meldest, erhältst du <strong>+4 Credits</strong>!
+              <strong>💡</strong> {t("app.setSpotHint")}
             </div>
           </div>
           <Button onClick={() => {
             setShowTimerDialog(false);
             handleConfirmParking();
           }} size="lg" className="w-full mt-4">
-            Parkplatz setzen
+            {t("app.setSpotButton")}
           </Button>
         </DialogContent>
       </Dialog>
@@ -887,7 +894,7 @@ const Index = () => {
                       <Clock className="h-5 w-5 text-primary" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground">Parking Timer</p>
+                      <p className="text-sm font-medium text-foreground">{t("app.parkingTimer")}</p>
                       <p className="text-lg font-bold text-primary truncate">{timeRemaining}</p>
                     </div>
                   </div>}
@@ -899,11 +906,11 @@ const Index = () => {
             <div className="w-full flex items-center justify-center gap-3 py-1">
               {isStatsExpanded ? <button onClick={() => setIsStatsExpanded(false)} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors touch-target active:scale-95">
                   <ChevronDown className="h-4 w-4" />
-                  <span className="text-sm">Hide stats</span>
+                  <span className="text-sm">{t("app.hideStats")}</span>
                 </button> : <button onClick={handleFocusNearestSpot} className="flex items-center justify-center bg-primary/10 px-4 py-2 rounded-full hover:bg-primary/20 transition-colors active:scale-95 touch-target gap-[8px] text-left">
                   <div className="w-2 h-2 shrink-0 rounded-full bg-primary animate-pulse" />
                   <span className="text-sm font-medium text-primary leading-none">
-                    {availableSpots} spots available
+                    {availableSpots} {t("app.spotsAvailable")}
                   </span>
                 </button>}
             </div>
