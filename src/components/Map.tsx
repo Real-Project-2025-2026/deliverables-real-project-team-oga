@@ -250,26 +250,36 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
     }
   }, [currentLocation, isMapLoaded]);
 
-  // Update parking spot markers (excluding spots with active handshake deals)
+  // Combined effect for parking spots AND handshake markers to avoid race conditions
   useEffect(() => {
     if (!map.current || !isMapLoaded) return;
 
-    // Get spot IDs that have ANY active handshake deals (not just 'open')
-    // This ensures parking markers are hidden for all deal states
+    console.log('=== MARKER UPDATE ===');
+    console.log('Parking spots:', parkingSpots.length);
+    console.log('Handshake deals:', handshakeDeals.length, handshakeDeals.map(d => ({ id: d.id, status: d.status, spot_id: d.spot_id })));
+
+    // Get spot IDs that have ANY active handshake deals
     const activeStatuses = ['open', 'pending_approval', 'accepted', 'giver_confirmed', 'receiver_confirmed'];
     const handshakeSpotIds = new Set(
       handshakeDeals
         .filter(d => activeStatuses.includes(d.status))
         .map(d => d.spot_id)
     );
+    console.log('Spots with active handshake deals:', Array.from(handshakeSpotIds));
+
+    // Clear ALL markers first
     Object.values(markers.current).forEach(marker => marker.remove());
     markers.current = {};
+    Object.values(handshakeMarkers.current).forEach(marker => marker.remove());
+    handshakeMarkers.current = {};
 
+    // 1. Add parking spot markers (excluding spots with active handshake deals)
     parkingSpots.forEach(spot => {
       if (!map.current) return;
       
       // Skip spots that have an active handshake deal - they'll get handshake markers instead
       if (handshakeSpotIds.has(spot.id)) {
+        console.log('Skipping parking marker for spot with handshake:', spot.id);
         return;
       }
 
@@ -295,32 +305,18 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
 
       markers.current[spot.id] = marker;
     });
-  }, [parkingSpots, isMapLoaded, onSpotClick, handshakeDeals]);
 
-  // Update handshake deal markers
-  useEffect(() => {
-    console.log('Handshake deals received in Map:', handshakeDeals);
-    console.log('Map loaded:', isMapLoaded, 'Map instance:', !!map.current);
-    
-    if (!map.current || !isMapLoaded) return;
-
-    // Remove old handshake markers
-    Object.values(handshakeMarkers.current).forEach(marker => marker.remove());
-    handshakeMarkers.current = {};
-
-    console.log('Processing handshake deals for markers:', handshakeDeals.length);
-
-    // Add new handshake markers
+    // 2. Add handshake markers for ALL active deals (giver sees their own deal too)
     handshakeDeals.forEach(deal => {
-      console.log('Adding marker for deal:', deal.id, 'status:', deal.status, 'at:', deal.longitude, deal.latitude);
-      if (!map.current) {
-        console.log('No map instance for deal:', deal.id);
+      if (!map.current) return;
+      
+      // Only show markers for active deals
+      if (!activeStatuses.includes(deal.status)) {
+        console.log('Skipping handshake marker - inactive status:', deal.id, deal.status);
         return;
       }
-      if (deal.status !== 'open') {
-        console.log('Deal status is not open:', deal.status);
-        return;
-      }
+
+      console.log('Creating handshake marker for:', deal.id, 'status:', deal.status);
 
       const el = document.createElement('div');
       el.innerHTML = `
@@ -338,7 +334,8 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
       el.style.position = 'relative';
       el.style.zIndex = '1000';
 
-      if (onHandshakeDealClick) {
+      // Only allow clicking on 'open' deals (for other users to request)
+      if (deal.status === 'open' && onHandshakeDealClick) {
         el.addEventListener('click', () => onHandshakeDealClick(deal.id));
       }
 
@@ -348,12 +345,14 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
           .addTo(map.current);
 
         handshakeMarkers.current[deal.id] = marker;
-        console.log('Marker successfully added for deal:', deal.id);
+        console.log('Handshake marker added successfully:', deal.id);
       } catch (err) {
-        console.error('Error adding marker for deal:', deal.id, err);
+        console.error('Error adding handshake marker:', deal.id, err);
       }
     });
-  }, [handshakeDeals, isMapLoaded, onHandshakeDealClick]);
+
+    console.log('=== END MARKER UPDATE ===');
+  }, [parkingSpots, handshakeDeals, isMapLoaded, onSpotClick, onHandshakeDealClick]);
 
   // Token input form - render as overlay
   if (status === 'input') {
