@@ -1,7 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Navigation, Handshake, Coins } from 'lucide-react';
-
 interface LeavingOptionsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -9,7 +8,6 @@ interface LeavingOptionsDialogProps {
   onHandshakeOffer: () => void;
   hasEnoughCredits: boolean;
 }
-
 const LeavingOptionsDialog = ({
   open,
   onOpenChange,
@@ -17,8 +15,7 @@ const LeavingOptionsDialog = ({
   onHandshakeOffer,
   hasEnoughCredits
 }: LeavingOptionsDialogProps) => {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+  return <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Wie möchtest du gehen?</DialogTitle>
@@ -29,11 +26,7 @@ const LeavingOptionsDialog = ({
 
         <div className="space-y-3">
           {/* Normal Leave */}
-          <Button
-            variant="outline"
-            className="w-full h-auto py-4 flex flex-col items-start gap-2 hover:bg-transparent"
-            onClick={onNormalLeave}
-          >
+          <Button variant="outline" onClick={onNormalLeave} className="w-full h-auto py-4 flex flex-col items-start gap-2 hover:bg-transparent shadow-sm">
             <div className="flex items-center gap-2 w-full">
               <Navigation className="h-5 w-5 text-muted-foreground" />
               <span className="font-semibold text-foreground">Einfach gehen</span>
@@ -42,16 +35,11 @@ const LeavingOptionsDialog = ({
               <Coins className="h-3 w-3" />
               <span>+2 Credits zurück</span>
             </div>
-            {!hasEnoughCredits && (
-              <span className="text-xs text-destructive">Nicht genug Credits!</span>
-            )}
+            {!hasEnoughCredits && <span className="text-xs text-destructive">Nicht genug Credits!</span>}
           </Button>
 
           {/* Handshake */}
-          <Button
-            className="w-full h-auto py-4 flex flex-col items-start gap-2"
-            onClick={onHandshakeOffer}
-          >
+          <Button className="w-full h-auto py-4 flex flex-col items-start gap-2" onClick={onHandshakeOffer}>
             <div className="flex items-center gap-2 w-full">
               <Handshake className="h-5 w-5" />
               <span className="font-semibold">Handshake anbieten</span>
@@ -67,8 +55,6 @@ const LeavingOptionsDialog = ({
           Mit einem Handshake kannst du deinen Parkplatz direkt übergeben und Credits verdienen!
         </p>
       </DialogContent>
-    </Dialog>
-  );
+    </Dialog>;
 };
-
 export default LeavingOptionsDialog;
