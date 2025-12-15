@@ -712,8 +712,10 @@ const Index = () => {
     }}>
         <div className="h-full px-3 sm:px-6 relative">
           {(() => {
-            const openDeals = getAllOpenDeals();
-            console.log('Passing handshake deals to Map:', openDeals);
+            // Pass ALL active deals for marker filtering, but Map will only show 'open' deals as clickable
+            const activeStatuses = ['open', 'pending_approval', 'accepted', 'giver_confirmed', 'receiver_confirmed'];
+            const activeDealsForMap = activeDeals.filter(d => activeStatuses.includes(d.status));
+            console.log('Passing handshake deals to Map:', activeDealsForMap);
             return (
               <Map 
                 parkingSpots={parkingSpots} 
@@ -722,7 +724,7 @@ const Index = () => {
                 onMapReady={setMapInstance} 
                 manualPinLocation={manualPinLocation} 
                 onManualPinMove={setManualPinLocation}
-                handshakeDeals={openDeals}
+                handshakeDeals={activeDealsForMap}
                 onHandshakeDealClick={handleHandshakeDealClick}
               />
             );
