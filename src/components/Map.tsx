@@ -17,6 +17,8 @@ interface HandshakeDeal {
   latitude: number;
   longitude: number;
   status: string;
+  giver_id: string;
+  receiver_id: string | null;
 }
 
 interface MapProps {
@@ -28,11 +30,12 @@ interface MapProps {
   onManualPinMove?: (location: [number, number]) => void;
   handshakeDeals?: HandshakeDeal[];
   onHandshakeDealClick?: (dealId: string) => void;
+  currentUserId?: string;
 }
 
 const MAPBOX_TOKEN_KEY = 'mapbox_access_token';
 
-const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPinLocation, onManualPinMove, handshakeDeals = [], onHandshakeDealClick }: MapProps) => {
+const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPinLocation, onManualPinMove, handshakeDeals = [], onHandshakeDealClick, currentUserId }: MapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<{ [key: string]: mapboxgl.Marker }>({});
@@ -306,17 +309,26 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
       markers.current[spot.id] = marker;
     });
 
-    // 2. Add handshake markers for ALL active deals (giver sees their own deal too)
+    // 2. Add handshake markers - visibility based on status and user participation
     handshakeDeals.forEach(deal => {
       if (!map.current) return;
       
-      // Only show markers for active deals
-      if (!activeStatuses.includes(deal.status)) {
-        console.log('Skipping handshake marker - inactive status:', deal.id, deal.status);
+      // Check if current user is a participant (giver or receiver)
+      const isParticipant = currentUserId && 
+        (deal.giver_id === currentUserId || deal.receiver_id === currentUserId);
+      
+      // Visibility rules:
+      // - 'open' deals: visible to everyone (available for requests)
+      // - Other active statuses: only visible to participants (giver/receiver)
+      const isOpen = deal.status === 'open';
+      const isActiveForParticipant = activeStatuses.includes(deal.status) && isParticipant;
+      
+      if (!isOpen && !isActiveForParticipant) {
+        console.log('Skipping handshake marker - not visible to user:', deal.id, deal.status);
         return;
       }
 
-      console.log('Creating handshake marker for:', deal.id, 'status:', deal.status);
+      console.log('Creating handshake marker for:', deal.id, 'status:', deal.status, 'isParticipant:', isParticipant);
 
       const el = document.createElement('div');
       el.className = 'handshake-marker-el';
@@ -349,7 +361,7 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
     });
 
     console.log('=== END MARKER UPDATE ===');
-  }, [parkingSpots, handshakeDeals, isMapLoaded, onSpotClick, onHandshakeDealClick]);
+  }, [parkingSpots, handshakeDeals, isMapLoaded, onSpotClick, onHandshakeDealClick, currentUserId]);
 
   // Token input form - render as overlay
   if (status === 'input') {
