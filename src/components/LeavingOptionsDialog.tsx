@@ -36,7 +36,7 @@ const LeavingOptionsDialog = ({
           >
             <div className="flex items-center gap-2 w-full">
               <Navigation className="h-5 w-5 text-muted-foreground" />
-              <span className="font-semibold">Einfach gehen</span>
+              <span className="font-semibold text-foreground">Einfach gehen</span>
             </div>
             <div className="flex items-center gap-1 text-xs text-green-600">
               <Coins className="h-3 w-3" />
