@@ -38,9 +38,9 @@ const LeavingOptionsDialog = ({
               <Navigation className="h-5 w-5 text-muted-foreground" />
               <span className="font-semibold">Einfach gehen</span>
             </div>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1 text-xs text-green-600">
               <Coins className="h-3 w-3" />
-              <span>-2 Credits</span>
+              <span>+2 Credits zurück</span>
             </div>
             {!hasEnoughCredits && (
               <span className="text-xs text-destructive">Nicht genug Credits!</span>

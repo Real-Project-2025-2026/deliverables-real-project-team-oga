@@ -53,14 +53,14 @@ const HandshakeRequestDialog = ({
           <div className="p-3 rounded-lg border bg-card">
             <div className="flex items-center gap-2 mb-1">
               <Coins className="h-4 w-4 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">Bei Abschluss erhältst du:</p>
+              <p className="text-sm text-muted-foreground">Kosten bei Abschluss:</p>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-primary">+10</span>
+              <span className="text-2xl font-bold text-orange-500">-10</span>
               <span className="text-muted-foreground">Credits</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              (statt -2 Credits beim normalen Parken)
+              Für einen reservierten Parkplatz
             </p>
           </div>
 
