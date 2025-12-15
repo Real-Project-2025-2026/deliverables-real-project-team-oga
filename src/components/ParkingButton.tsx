@@ -20,19 +20,17 @@ const ParkingButton = ({ onToggle, isParked = false }: ParkingButtonProps) => {
   return (
     <button
       onClick={handleToggle}
-      style={{ touchAction: 'manipulation' }}
       className={`
         relative w-full min-h-[56px] rounded-2xl font-semibold text-base
-        transition-all duration-150 ease-out
-        active:scale-[0.95] active:opacity-90
+        transition-all duration-300 ease-out
+        active:scale-[0.98]
         shadow-lg
         touch-target
-        select-none
         ${isParked 
           ? 'bg-success text-white' 
           : 'bg-primary text-primary-foreground'
         }
-        ${isAnimating ? 'scale-[0.95]' : ''}
+        ${isAnimating ? 'scale-[0.98]' : ''}
       `}
     >
       <div className="flex items-center justify-center gap-3 py-4 px-6">

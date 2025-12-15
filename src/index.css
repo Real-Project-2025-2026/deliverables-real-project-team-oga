@@ -120,17 +120,6 @@ All colors MUST be HSL.
     -webkit-user-select: text;
     user-select: text;
   }
-
-  /* Global touch optimization for all interactive elements */
-  button, a, [role="button"], .touch-target {
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-  }
-}
-
-/* Touch action utility class */
-.touch-action-manipulation {
-  touch-action: manipulation;
 }
 
 @layer utilities {
