@@ -297,50 +297,33 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
         : 'hsl(0, 0%, 70%)';
 
       const el = document.createElement('div');
-      el.style.position = 'relative';
-      el.style.width = '32px';
-      el.style.height = '40px';
+      el.className = 'parking-marker';
+      el.style.width = '40px';
+      el.style.height = '48px';
+      el.style.cursor = 'pointer';
       
       el.innerHTML = `
-        <svg width="32" height="40" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+        <svg width="32" height="40" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block; margin: 0 auto;">
           <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 20 12 20s12-11 12-20c0-6.627-5.373-12-12-12z" 
                 fill="${markerColor}" 
                 stroke="white" stroke-width="2"/>
           <circle cx="12" cy="12" r="4" fill="white"/>
         </svg>
-        <div style="
-          position: absolute;
-          top: -12px;
-          left: -12px;
-          width: 56px;
-          height: 64px;
-          cursor: pointer;
-          z-index: 10;
-        "></div>
       `;
-
-      // Get the invisible click area
-      const clickArea = el.querySelector('div');
-      
-      if (spot.available && onSpotClick) {
-        const handleClick = (e: Event) => {
-          console.log('Marker clicked:', spot.id);
-          e.preventDefault();
-          e.stopPropagation();
-          onSpotClick(spot.id);
-        };
-        
-        if (clickArea) {
-          clickArea.addEventListener('click', handleClick);
-          clickArea.addEventListener('touchstart', handleClick, { passive: false });
-        }
-        el.addEventListener('click', handleClick);
-        el.addEventListener('touchstart', handleClick, { passive: false });
-      }
 
       const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
         .setLngLat(spot.coordinates)
         .addTo(map.current);
+
+      // Add click listener AFTER marker is created, using getElement()
+      if (spot.available && onSpotClick) {
+        const markerEl = marker.getElement();
+        markerEl.addEventListener('click', (e) => {
+          console.log('Marker clicked:', spot.id);
+          e.stopPropagation();
+          onSpotClick(spot.id);
+        });
+      }
 
       markers.current[spot.id] = marker;
     });
