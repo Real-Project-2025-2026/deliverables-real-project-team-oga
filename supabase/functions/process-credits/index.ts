@@ -94,24 +94,13 @@ serve(async (req) => {
         });
 
       case 'parking_used':
-        // Deduct 2 credits for parking
-        if (currentBalance < 2) {
-          return new Response(JSON.stringify({ 
-            error: 'Insufficient credits',
-            balance: currentBalance,
-            required: 2
-          }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
-
-        const newBalance = currentBalance - 2;
+        // Refund 2 credits when leaving normally (user gets back what they paid when parking)
+        const refundBalance = currentBalance + 2;
         
         // Update balance
         const { error: updateError } = await supabase
           .from('user_credits')
-          .update({ balance: newBalance })
+          .update({ balance: refundBalance })
           .eq('user_id', user.id);
 
         if (updateError) {
@@ -125,18 +114,18 @@ serve(async (req) => {
         // Record transaction
         await supabase.from('credit_transactions').insert({
           user_id: user.id,
-          amount: -2,
+          amount: 2,
           type: 'parking_used',
-          description: 'Parken beendet',
+          description: 'Parken beendet - Credits zurück',
           related_spot_id: body.spotId
         });
 
-        console.log('Deducted 2 credits, new balance:', newBalance);
+        console.log('Refunded 2 credits, new balance:', refundBalance);
         
         return new Response(JSON.stringify({ 
           success: true,
-          balance: newBalance,
-          deducted: 2
+          balance: refundBalance,
+          refunded: 2
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
@@ -204,7 +193,7 @@ serve(async (req) => {
           related_user_id: deal.receiver_id
         });
 
-        // Give receiver +10 credits
+        // Receiver pays 10 credits for the handshake spot
         const { data: receiverCredits } = await supabase
           .from('user_credits')
           .select('balance')
@@ -213,12 +202,12 @@ serve(async (req) => {
 
         await supabase
           .from('user_credits')
-          .update({ balance: (receiverCredits?.balance ?? 0) + 10 })
+          .update({ balance: (receiverCredits?.balance ?? 0) - 10 })
           .eq('user_id', deal.receiver_id);
 
         await supabase.from('credit_transactions').insert({
           user_id: deal.receiver_id,
-          amount: 10,
+          amount: -10,
           type: 'handshake_receiver',
           description: 'Handshake - Parkplatz erhalten',
           related_spot_id: deal.spot_id,
