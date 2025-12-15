@@ -37,25 +37,78 @@ Deno.serve(async (req) => {
     console.log(`Deleting spots available before: ${cutoffTime.toISOString()}`)
 
     // Delete parking spots that are available and older than threshold
-    const { data, error } = await supabase
+    const { data: deletedSpots, error: spotsError } = await supabase
       .from('parking_spots')
       .delete()
       .eq('available', true)
       .lt('available_since', cutoffTime.toISOString())
       .select()
 
-    if (error) {
-      console.error('Error deleting parking spots:', error)
-      throw error
+    if (spotsError) {
+      console.error('Error deleting parking spots:', spotsError)
+      throw spotsError
     }
 
-    const deletedCount = data?.length || 0
-    console.log(`Deleted ${deletedCount} expired parking spots`)
+    const deletedSpotsCount = deletedSpots?.length || 0
+    console.log(`Deleted ${deletedSpotsCount} expired parking spots`)
+
+    // Cleanup handshake deals:
+    // Open deals where departure_time + threshold has passed should be cancelled
+    // This gives users the configured time window after departure_time before cleanup
+    
+    // First, get all 'open' deals that have passed their departure_time + threshold
+    const { data: expiredDeals, error: fetchDealsError } = await supabase
+      .from('handshake_deals')
+      .select('*')
+      .eq('status', 'open')
+      .not('departure_time', 'is', null)
+      .lt('departure_time', cutoffTime.toISOString())
+
+    if (fetchDealsError) {
+      console.error('Error fetching expired handshake deals:', fetchDealsError)
+      throw fetchDealsError
+    }
+
+    console.log(`Found ${expiredDeals?.length || 0} expired open handshake deals`)
+
+    // Cancel expired open deals
+    let cancelledDealsCount = 0
+    if (expiredDeals && expiredDeals.length > 0) {
+      const expiredDealIds = expiredDeals.map(d => d.id)
+      
+      const { data: cancelledDeals, error: cancelError } = await supabase
+        .from('handshake_deals')
+        .update({ status: 'cancelled', updated_at: now.toISOString() })
+        .in('id', expiredDealIds)
+        .select()
+
+      if (cancelError) {
+        console.error('Error cancelling expired handshake deals:', cancelError)
+        throw cancelError
+      }
+
+      cancelledDealsCount = cancelledDeals?.length || 0
+      console.log(`Cancelled ${cancelledDealsCount} expired handshake deals`)
+
+      // Also make the associated parking spots available again
+      const spotIds = expiredDeals.map(d => d.spot_id)
+      const { error: spotUpdateError } = await supabase
+        .from('parking_spots')
+        .update({ available: true, available_since: now.toISOString() })
+        .in('id', spotIds)
+
+      if (spotUpdateError) {
+        console.error('Error updating parking spots for cancelled deals:', spotUpdateError)
+      } else {
+        console.log(`Made ${spotIds.length} parking spots available again`)
+      }
+    }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        deletedCount,
+        deletedSpotsCount,
+        cancelledDealsCount,
         isDaytime,
         thresholdMinutes,
         currentHourMunich: currentHour
