@@ -6,7 +6,20 @@
 All colors MUST be HSL.
 */
 
+/* Mobile touch optimization - remove focus delays */
 @layer base {
+  /* Disable focus-visible on touch devices to prevent click delay */
+  @supports (pointer: coarse) {
+    button:focus-visible,
+    [role="button"]:focus-visible,
+    a:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible {
+      outline: none;
+    }
+  }
+
   :root {
     --background: 0 0% 98%;
     --foreground: 0 0% 10%;
@@ -37,7 +50,7 @@ All colors MUST be HSL.
     --ring: 211 100% 50%;
 
     --radius: 1rem;
-    
+
     --ios-blue: 211 100% 50%;
     --success: 142 76% 36%;
     --warning: 38 92% 50%;
@@ -86,7 +99,7 @@ All colors MUST be HSL.
     --border: 0 0% 25%;
     --input: 0 0% 25%;
     --ring: 211 100% 50%;
-    
+
     --ios-blue: 211 100% 50%;
     --success: 142 76% 36%;
     --warning: 38 92% 50%;
@@ -116,7 +129,8 @@ All colors MUST be HSL.
   }
 
   /* Allow text selection in inputs and textareas */
-  input, textarea {
+  input,
+  textarea {
     -webkit-user-select: text;
     user-select: text;
   }
@@ -152,7 +166,7 @@ All colors MUST be HSL.
 }
 
 .handshake-marker-el::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 8px;
   left: 50%;

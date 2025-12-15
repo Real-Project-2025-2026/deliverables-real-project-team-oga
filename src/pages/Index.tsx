@@ -9,7 +9,13 @@ import { usePresence } from "@/hooks/usePresence";
 import { useCredits } from "@/hooks/useCredits";
 import { useHandshake, HandshakeDeal } from "@/hooks/useHandshake";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +23,17 @@ import { formatDistanceToNow, differenceInMinutes } from "date-fns";
 import { calculateDistance } from "@/lib/utils";
 import { calculateParkingProbability } from "@/lib/parkingProbability";
 import { ProbabilityBar } from "@/components/ProbabilityBar";
-import { Clock, Locate, ChevronUp, ChevronDown, ArrowLeft, Navigation, MapPin, Handshake as HandshakeIcon, Users } from "lucide-react";
+import {
+  Clock,
+  Locate,
+  ChevronUp,
+  ChevronDown,
+  ArrowLeft,
+  Navigation,
+  MapPin,
+  Handshake as HandshakeIcon,
+  Users,
+} from "lucide-react";
 import AccountMenu from "@/components/AccountMenu";
 import LeavingOptionsDialog from "@/components/LeavingOptionsDialog";
 import HandshakeDialog from "@/components/HandshakeDialog";
@@ -41,13 +57,15 @@ interface UserParking {
   durationMinutes: number | null;
 }
 
-const PARKING_SESSION_KEY = 'ogap_parking_session';
+const PARKING_SESSION_KEY = "ogap_parking_session";
 
 const Index = () => {
   const { toast } = useToast();
   const { t } = useLanguage();
   const activeUsers = usePresence();
-  const [currentLocation, setCurrentLocation] = useState<[number, number]>([11.58, 48.155]);
+  const [currentLocation, setCurrentLocation] = useState<[number, number]>([
+    11.58, 48.155,
+  ]);
   const [parkingSpots, setParkingSpots] = useState<ParkingSpot[]>([]);
   const [selectedSpot, setSelectedSpot] = useState<ParkingSpot | null>(null);
   const [userParking, setUserParking] = useState<UserParking | null>(() => {
@@ -59,7 +77,7 @@ const Index = () => {
         return {
           ...parsed,
           parkingTime: new Date(parsed.parkingTime),
-          returnTime: parsed.returnTime ? new Date(parsed.returnTime) : null
+          returnTime: parsed.returnTime ? new Date(parsed.returnTime) : null,
         };
       } catch {
         return null;
@@ -68,15 +86,19 @@ const Index = () => {
     return null;
   });
   const [showTimerDialog, setShowTimerDialog] = useState(false);
-  
+
   const [timeRemaining, setTimeRemaining] = useState<string>("");
   const [mapInstance, setMapInstance] = useState<any>(null);
-  const [manualPinLocation, setManualPinLocation] = useState<[number, number] | null>(null);
+  const [manualPinLocation, setManualPinLocation] = useState<
+    [number, number] | null
+  >(null);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
-  const [pendingAction, setPendingAction] = useState<"park" | "take" | null>(null);
+  const [pendingAction, setPendingAction] = useState<"park" | "take" | null>(
+    null
+  );
   // Removed isStatsExpanded - stats are now always visible
   const [showLeavingOptions, setShowLeavingOptions] = useState(false);
   const [showHandshakeDialog, setShowHandshakeDialog] = useState(false);
@@ -91,47 +113,50 @@ const Index = () => {
   }, [userParking]);
 
   // Credit change state for animation
-  const [lastCreditChange, setLastCreditChange] = useState<{ amount: number; type: 'gain' | 'loss' } | null>(null);
-  
+  const [lastCreditChange, setLastCreditChange] = useState<{
+    amount: number;
+    type: "gain" | "loss";
+  } | null>(null);
+
   // Credit and Handshake hooks
-  const { credits, deductCredits, refreshCredits } = useCredits(user, (change) => {
-    setLastCreditChange(change);
-    // Clear after animation
-    setTimeout(() => setLastCreditChange(null), 2500);
-  });
-  const { 
-    myDeal, 
-    activeDeals, 
-    createHandshakeOffer, 
+  const { credits, deductCredits, refreshCredits } = useCredits(
+    user,
+    (change) => {
+      setLastCreditChange(change);
+      // Clear after animation
+      setTimeout(() => setLastCreditChange(null), 2500);
+    }
+  );
+  const {
+    myDeal,
+    activeDeals,
+    createHandshakeOffer,
     requestDeal,
     acceptRequest,
     declineRequest,
-    completeDeal, 
+    completeDeal,
     cancelDeal,
     getOpenDeals,
-    getAllOpenDeals 
+    getAllOpenDeals,
   } = useHandshake(user);
 
   // Additional state for new handshake flow
-  const [showHandshakeOfferDialog, setShowHandshakeOfferDialog] = useState(false);
-  const [showHandshakeRequestDialog, setShowHandshakeRequestDialog] = useState(false);
-  const [selectedDealForRequest, setSelectedDealForRequest] = useState<HandshakeDeal | null>(null);
+  const [showHandshakeOfferDialog, setShowHandshakeOfferDialog] =
+    useState(false);
+  const [showHandshakeRequestDialog, setShowHandshakeRequestDialog] =
+    useState(false);
+  const [selectedDealForRequest, setSelectedDealForRequest] =
+    useState<HandshakeDeal | null>(null);
 
   // Auth state management
   useEffect(() => {
     const {
-      data: {
-        subscription
-      }
+      data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
     });
-    supabase.auth.getSession().then(({
-      data: {
-        session
-      }
-    }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
     });
@@ -144,21 +169,21 @@ const Index = () => {
     if (!user) return;
 
     const channel = supabase
-      .channel('handshake-completion')
+      .channel("handshake-completion")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'handshake_deals',
-          filter: `receiver_id=eq.${user.id}`
+          event: "UPDATE",
+          schema: "public",
+          table: "handshake_deals",
+          filter: `receiver_id=eq.${user.id}`,
         },
         async (payload) => {
           const deal = payload.new as any;
-          console.log('Handshake deal update for receiver:', deal);
-          
+          console.log("Handshake deal update for receiver:", deal);
+
           // Check if deal just got completed
-          if (deal.status === 'completed' && !userParking) {
+          if (deal.status === "completed" && !userParking) {
             // Set parking session for the receiver
             const now = new Date();
             const defaultDuration = 60; // 60 minutes default
@@ -166,11 +191,12 @@ const Index = () => {
               spotId: deal.spot_id,
               parkingTime: now,
               returnTime: new Date(now.getTime() + defaultDuration * 60000),
-              durationMinutes: defaultDuration
+              durationMinutes: defaultDuration,
             });
             toast({
-              title: 'Parkplatz erhalten!',
-              description: 'Der Handshake ist abgeschlossen. Du hast jetzt den Parkplatz.'
+              title: "Parkplatz erhalten!",
+              description:
+                "Der Handshake ist abgeschlossen. Du hast jetzt den Parkplatz.",
             });
           }
         }
@@ -182,28 +208,27 @@ const Index = () => {
     };
   }, [user?.id, userParking, toast]);
 
-  const availableSpots = parkingSpots.filter(spot => spot.available).length;
+  const availableSpots = parkingSpots.filter((spot) => spot.available).length;
 
   // Fetch parking spots from database
   useEffect(() => {
     const fetchParkingSpots = async () => {
-      const {
-        data,
-        error
-      } = await supabase.from("parking_spots").select("*");
+      const { data, error } = await supabase.from("parking_spots").select("*");
       if (error) {
         console.error("Error fetching parking spots:", error);
         toast({
           title: "Error Loading Spots",
           description: "Could not load parking spots from the database.",
-          variant: "destructive"
+          variant: "destructive",
         });
       } else if (data) {
-        const spots: ParkingSpot[] = data.map(spot => ({
+        const spots: ParkingSpot[] = data.map((spot) => ({
           id: spot.id,
           coordinates: [spot.longitude, spot.latitude] as [number, number],
           available: spot.available,
-          availableSince: spot.available_since ? new Date(spot.available_since) : undefined
+          availableSince: spot.available_since
+            ? new Date(spot.available_since)
+            : undefined,
         }));
         setParkingSpots(spots);
       }
@@ -212,33 +237,61 @@ const Index = () => {
     fetchParkingSpots();
 
     // Subscribe to real-time updates
-    const channel = supabase.channel("parking-spots-changes").on("postgres_changes", {
-      event: "*",
-      schema: "public",
-      table: "parking_spots"
-    }, payload => {
-      console.log("Real-time update:", payload);
-      if (payload.eventType === "INSERT") {
-        const newSpot = payload.new as any;
-        setParkingSpots(prev => [...prev, {
-          id: newSpot.id,
-          coordinates: [newSpot.longitude, newSpot.latitude] as [number, number],
-          available: newSpot.available,
-          availableSince: newSpot.available_since ? new Date(newSpot.available_since) : undefined
-        }]);
-      } else if (payload.eventType === "UPDATE") {
-        const updatedSpot = payload.new as any;
-        setParkingSpots(prev => prev.map(spot => spot.id === updatedSpot.id ? {
-          id: updatedSpot.id,
-          coordinates: [updatedSpot.longitude, updatedSpot.latitude] as [number, number],
-          available: updatedSpot.available,
-          availableSince: updatedSpot.available_since ? new Date(updatedSpot.available_since) : undefined
-        } : spot));
-      } else if (payload.eventType === "DELETE") {
-        const deletedSpot = payload.old as any;
-        setParkingSpots(prev => prev.filter(spot => spot.id !== deletedSpot.id));
-      }
-    }).subscribe();
+    const channel = supabase
+      .channel("parking-spots-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "parking_spots",
+        },
+        (payload) => {
+          console.log("Real-time update:", payload);
+          if (payload.eventType === "INSERT") {
+            const newSpot = payload.new as any;
+            setParkingSpots((prev) => [
+              ...prev,
+              {
+                id: newSpot.id,
+                coordinates: [newSpot.longitude, newSpot.latitude] as [
+                  number,
+                  number
+                ],
+                available: newSpot.available,
+                availableSince: newSpot.available_since
+                  ? new Date(newSpot.available_since)
+                  : undefined,
+              },
+            ]);
+          } else if (payload.eventType === "UPDATE") {
+            const updatedSpot = payload.new as any;
+            setParkingSpots((prev) =>
+              prev.map((spot) =>
+                spot.id === updatedSpot.id
+                  ? {
+                      id: updatedSpot.id,
+                      coordinates: [
+                        updatedSpot.longitude,
+                        updatedSpot.latitude,
+                      ] as [number, number],
+                      available: updatedSpot.available,
+                      availableSince: updatedSpot.available_since
+                        ? new Date(updatedSpot.available_since)
+                        : undefined,
+                    }
+                  : spot
+              )
+            );
+          } else if (payload.eventType === "DELETE") {
+            const deletedSpot = payload.old as any;
+            setParkingSpots((prev) =>
+              prev.filter((spot) => spot.id !== deletedSpot.id)
+            );
+          }
+        }
+      )
+      .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
@@ -250,34 +303,43 @@ const Index = () => {
       toast({
         title: "Location Not Supported",
         description: "Your browser doesn't support geolocation.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     const handleLocationSuccess = (position: GeolocationPosition) => {
-      const newLocation: [number, number] = [position.coords.longitude, position.coords.latitude];
+      const newLocation: [number, number] = [
+        position.coords.longitude,
+        position.coords.latitude,
+      ];
       setCurrentLocation(newLocation);
       if (mapInstance) {
         mapInstance.flyTo({
           center: newLocation,
-          zoom: 15
+          zoom: 15,
         });
       }
       toast({
         title: "Location Found",
-        description: "Using your current location to find nearby parking."
+        description: "Using your current location to find nearby parking.",
       });
     };
 
     const handleLocationError = (error: GeolocationPositionError) => {
-      console.error("Location error code:", error.code, "message:", error.message);
+      console.error(
+        "Location error code:",
+        error.code,
+        "message:",
+        error.message
+      );
       // Only show error for permission denied (code 1)
       if (error.code === 1) {
         toast({
           title: "Location Access Denied",
-          description: "Using default location. Enable location access for better results.",
-          variant: "destructive"
+          description:
+            "Using default location. Enable location access for better results.",
+          variant: "destructive",
         });
       }
     };
@@ -301,16 +363,33 @@ const Index = () => {
     );
   }, [toast, mapInstance]);
   const getDistanceToSpot = (spot: ParkingSpot) => {
-    const distance = calculateDistance(currentLocation[1], currentLocation[0], spot.coordinates[1], spot.coordinates[0]);
-    return distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance.toFixed(1)}km`;
+    const distance = calculateDistance(
+      currentLocation[1],
+      currentLocation[0],
+      spot.coordinates[1],
+      spot.coordinates[0]
+    );
+    return distance < 1
+      ? `${Math.round(distance * 1000)}m`
+      : `${distance.toFixed(1)}km`;
   };
   const findNearestAvailableSpot = () => {
-    const availableParkingSpots = parkingSpots.filter(spot => spot.available);
+    const availableParkingSpots = parkingSpots.filter((spot) => spot.available);
     if (availableParkingSpots.length === 0) return null;
     let nearestSpot = availableParkingSpots[0];
-    let minDistance = calculateDistance(currentLocation[1], currentLocation[0], nearestSpot.coordinates[1], nearestSpot.coordinates[0]);
+    let minDistance = calculateDistance(
+      currentLocation[1],
+      currentLocation[0],
+      nearestSpot.coordinates[1],
+      nearestSpot.coordinates[0]
+    );
     for (const spot of availableParkingSpots) {
-      const distance = calculateDistance(currentLocation[1], currentLocation[0], spot.coordinates[1], spot.coordinates[0]);
+      const distance = calculateDistance(
+        currentLocation[1],
+        currentLocation[0],
+        spot.coordinates[1],
+        spot.coordinates[0]
+      );
       if (distance < minDistance) {
         minDistance = distance;
         nearestSpot = spot;
@@ -324,18 +403,18 @@ const Index = () => {
       mapInstance.flyTo({
         center: nearestSpot.coordinates,
         zoom: 17,
-        duration: 1000
+        duration: 1000,
       });
       setSelectedSpot(nearestSpot);
       toast({
         title: "Nearest Spot",
-        description: `Found parking ${getDistanceToSpot(nearestSpot)} away`
+        description: `Found parking ${getDistanceToSpot(nearestSpot)} away`,
       });
     } else if (!nearestSpot) {
       toast({
         title: "No Spots Available",
         description: "There are no available parking spots nearby.",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -353,15 +432,16 @@ const Index = () => {
         setTimeRemaining("Time expired!");
         toast({
           title: "Parking Time Expired",
-          description: "Your parking time has expired. Please move your vehicle.",
-          variant: "destructive"
+          description:
+            "Your parking time has expired. Please move your vehicle.",
+          variant: "destructive",
         });
       } else if (minutesLeft <= 5 && minutesLeft > 0) {
         setTimeRemaining(`${minutesLeft} min left`);
         if (minutesLeft === 5) {
           toast({
             title: "Parking Time Alert",
-            description: "Only 5 minutes left on your parking!"
+            description: "Only 5 minutes left on your parking!",
           });
         }
       } else if (minutesLeft < 60) {
@@ -395,13 +475,13 @@ const Index = () => {
 
   const handleNormalLeave = async () => {
     if (!userParking || !user) return;
-    
+
     // Check credits
     if (!credits.canPark) {
       toast({
         title: "Nicht genug Credits",
         description: "Du benötigst mindestens 2 Credits zum Parken.",
-        variant: "destructive"
+        variant: "destructive",
       });
       setShowLeavingOptions(false);
       return;
@@ -413,29 +493,33 @@ const Index = () => {
       toast({
         title: "Fehler",
         description: "Credits konnten nicht abgezogen werden.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     // Get spot coordinates for history
-    const spot = parkingSpots.find(s => s.id === userParking.spotId);
+    const spot = parkingSpots.find((s) => s.id === userParking.spotId);
     const spotCoords = spot?.coordinates || currentLocation;
 
     // Calculate duration
     const now = new Date();
-    const durationMinutes = Math.round((now.getTime() - userParking.parkingTime.getTime()) / 60000);
+    const durationMinutes = Math.round(
+      (now.getTime() - userParking.parkingTime.getTime()) / 60000
+    );
 
     // Save to parking history
-    const { error: historyError } = await supabase.from("parking_history").insert({
-      user_id: user.id,
-      spot_id: userParking.spotId,
-      latitude: spotCoords[1],
-      longitude: spotCoords[0],
-      started_at: userParking.parkingTime.toISOString(),
-      ended_at: now.toISOString(),
-      duration_minutes: durationMinutes
-    });
+    const { error: historyError } = await supabase
+      .from("parking_history")
+      .insert({
+        user_id: user.id,
+        spot_id: userParking.spotId,
+        latitude: spotCoords[1],
+        longitude: spotCoords[0],
+        started_at: userParking.parkingTime.toISOString(),
+        ended_at: now.toISOString(),
+        duration_minutes: durationMinutes,
+      });
 
     if (historyError) {
       console.error("Error saving parking history:", historyError);
@@ -443,17 +527,20 @@ const Index = () => {
     }
 
     // Update spot in database to be available again
-    const { error } = await supabase.from("parking_spots").update({
-      available: true,
-      available_since: new Date().toISOString()
-    }).eq("id", userParking.spotId);
+    const { error } = await supabase
+      .from("parking_spots")
+      .update({
+        available: true,
+        available_since: new Date().toISOString(),
+      })
+      .eq("id", userParking.spotId);
 
     if (error) {
       console.error("Error updating spot:", error);
       toast({
         title: "Error",
         description: "Could not update parking spot.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -461,8 +548,8 @@ const Index = () => {
     setUserParking(null);
     setShowLeavingOptions(false);
     toast({
-      title: "Danke fürs Teilen!",
-      description: "Dein Platz ist jetzt für andere verfügbar. (-2 Credits)"
+      title: t("app.thanksForSharingTitle"),
+      description: t("app.thanksForSharingDesc"),
     });
   };
 
@@ -476,7 +563,7 @@ const Index = () => {
     if (!userParking || !user) return;
 
     // Get spot coordinates
-    const spot = parkingSpots.find(s => s.id === userParking.spotId);
+    const spot = parkingSpots.find((s) => s.id === userParking.spotId);
     if (!spot) return;
 
     const deal = await createHandshakeOffer(
@@ -538,9 +625,9 @@ const Index = () => {
     }
 
     // Find the deal from all active deals
-    const deal = activeDeals.find(d => d.id === dealId);
+    const deal = activeDeals.find((d) => d.id === dealId);
     if (!deal) {
-      console.log('Deal not found:', dealId, 'Available deals:', activeDeals);
+      console.log("Deal not found:", dealId, "Available deals:", activeDeals);
       return;
     }
 
@@ -571,48 +658,46 @@ const Index = () => {
     // Creating a new spot at manual pin location or current location
     const spotLocation = manualPinLocation || currentLocation;
     const newSpotId = `user-${Date.now()}`;
-    const {
-      error
-    } = await supabase.from("parking_spots").insert({
+    const { error } = await supabase.from("parking_spots").insert({
       id: newSpotId,
       latitude: spotLocation[1],
       longitude: spotLocation[0],
       available: false,
-      available_since: null
+      available_since: null,
     });
     if (error) {
       console.error("Error creating spot:", error);
       toast({
         title: t("app.error"),
         description: t("app.errorCreateSpot"),
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
-    
+
     // Award +4 credits for reporting a new spot
     try {
-      const response = await supabase.functions.invoke('process-credits', {
-        body: { action: 'new_spot_reported', spotId: newSpotId }
+      const response = await supabase.functions.invoke("process-credits", {
+        body: { action: "new_spot_reported", spotId: newSpotId },
       });
       if (response.error) {
-        console.error('Error awarding credits:', response.error);
+        console.error("Error awarding credits:", response.error);
       } else {
         refreshCredits();
       }
     } catch (e) {
-      console.error('Error calling process-credits:', e);
+      console.error("Error calling process-credits:", e);
     }
-    
+
     setUserParking({
       spotId: newSpotId,
       parkingTime: now,
       returnTime: null,
-      durationMinutes: null
+      durationMinutes: null,
     });
     toast({
       title: t("app.newSpotReported"),
-      description: t("app.creditsReceived")
+      description: t("app.creditsReceived"),
     });
     setShowTimerDialog(false);
     setManualPinLocation(null);
@@ -620,21 +705,22 @@ const Index = () => {
 
   const handleTakeExistingSpot = async () => {
     if (!selectedSpot) return;
-    
+
     const now = new Date();
     // Taking an existing spot - update in database directly
-    const {
-      error
-    } = await supabase.from("parking_spots").update({
-      available: false,
-      available_since: null
-    }).eq("id", selectedSpot.id);
+    const { error } = await supabase
+      .from("parking_spots")
+      .update({
+        available: false,
+        available_since: null,
+      })
+      .eq("id", selectedSpot.id);
     if (error) {
       console.error("Error updating spot:", error);
       toast({
         title: t("app.error"),
         description: t("app.errorTakeSpot"),
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -642,16 +728,16 @@ const Index = () => {
       spotId: selectedSpot.id,
       parkingTime: now,
       returnTime: null,
-      durationMinutes: null
+      durationMinutes: null,
     });
     setSelectedSpot(null);
     toast({
       title: t("app.spotTaken"),
-      description: t("app.spotTakenDesc")
+      description: t("app.spotTakenDesc"),
     });
   };
   const handleSpotClick = (spotId: string) => {
-    const spot = parkingSpots.find(s => s.id === spotId);
+    const spot = parkingSpots.find((s) => s.id === spotId);
     if (spot && spot.available) {
       setSelectedSpot(spot);
     }
@@ -682,7 +768,7 @@ const Index = () => {
     setUserParking(null);
     toast({
       title: t("app.signedOut"),
-      description: t("app.signedOutDesc")
+      description: t("app.signedOutDesc"),
     });
   };
   const handleRecenter = () => {
@@ -690,44 +776,66 @@ const Index = () => {
       mapInstance.flyTo({
         center: currentLocation,
         zoom: 15,
-        duration: 1000
+        duration: 1000,
       });
       toast({
         title: t("app.mapRecentered"),
-        description: t("app.mapRecenteredDesc")
+        description: t("app.mapRecenteredDesc"),
       });
     }
   };
 
   // OS Detection for navigation
   const isIOS = () => {
-    return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    return (
+      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+    );
   };
 
   // Navigation handler
-  const handleNavigateToSpot = (spot: ParkingSpot, mapType: 'google' | 'apple') => {
+  const handleNavigateToSpot = (
+    spot: ParkingSpot,
+    mapType: "google" | "apple"
+  ) => {
     const [lng, lat] = spot.coordinates;
-    
-    if (mapType === 'google') {
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+
+    if (mapType === "google") {
+      window.open(
+        `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
+        "_blank"
+      );
     } else {
-      window.open(`https://maps.apple.com/?daddr=${lat},${lng}`, '_blank');
+      window.open(`https://maps.apple.com/?daddr=${lat},${lng}`, "_blank");
     }
   };
-  return <div className="h-[100dvh] w-full bg-background overflow-hidden">
+  return (
+    <div className="h-[100dvh] w-full bg-background overflow-hidden">
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-10 pt-safe">
         <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 flex items-start justify-between">
           <div className="flex items-center gap-3">
             <Link to="/">
-              <Button variant="ghost" size="icon" className="touch-target" aria-label="Back to home">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="touch-target"
+                aria-label="Back to home"
+                style={{
+                  touchAction: "manipulation",
+                  WebkitTapHighlightColor: "transparent",
+                }}
+              >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">OGAP</h1>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Find & Share Free Parking</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+                OGAP
+              </h1>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                Find & Share Free Parking
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -739,15 +847,33 @@ const Index = () => {
                 onClick={() => setShowHandshakeDialog(true)}
                 className="touch-target relative"
                 aria-label="Active handshake deal"
+                style={{
+                  touchAction: "manipulation",
+                  WebkitTapHighlightColor: "transparent",
+                }}
               >
                 <HandshakeIcon className="h-5 w-5 text-primary" />
                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse" />
               </Button>
             )}
             {user ? (
-              <AccountMenu user={user} onSignOut={handleSignOut} creditBalance={credits.balance} lastCreditChange={lastCreditChange} />
+              <AccountMenu
+                user={user}
+                onSignOut={handleSignOut}
+                creditBalance={credits.balance}
+                lastCreditChange={lastCreditChange}
+              />
             ) : (
-              <Button variant="outline" size="sm" onClick={() => setShowAuthDialog(true)} className="touch-target">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAuthDialog(true)}
+                className="touch-target"
+                style={{
+                  touchAction: "manipulation",
+                  WebkitTapHighlightColor: "transparent",
+                }}
+              >
                 Sign In
               </Button>
             )}
@@ -756,22 +882,33 @@ const Index = () => {
       </div>
 
       {/* Map */}
-      <div className="absolute inset-0 pt-20 sm:pt-28 transition-all duration-300" style={{
-      paddingBottom: userParking ? "12rem" : "10rem"
-    }}>
+      <div
+        className="absolute inset-0 pt-20 sm:pt-28 transition-all duration-300"
+        style={{
+          paddingBottom: userParking ? "12rem" : "10rem",
+        }}
+      >
         <div className="h-full px-3 sm:px-6 relative">
           {(() => {
             // Pass ALL active deals for marker filtering, but Map will only show 'open' deals as clickable
-            const activeStatuses = ['open', 'pending_approval', 'accepted', 'giver_confirmed', 'receiver_confirmed'];
-            const activeDealsForMap = activeDeals.filter(d => activeStatuses.includes(d.status));
-            console.log('Passing handshake deals to Map:', activeDealsForMap);
+            const activeStatuses = [
+              "open",
+              "pending_approval",
+              "accepted",
+              "giver_confirmed",
+              "receiver_confirmed",
+            ];
+            const activeDealsForMap = activeDeals.filter((d) =>
+              activeStatuses.includes(d.status)
+            );
+            console.log("Passing handshake deals to Map:", activeDealsForMap);
             return (
-              <Map 
-                parkingSpots={parkingSpots} 
-                currentLocation={currentLocation} 
-                onSpotClick={handleSpotClick} 
-                onMapReady={setMapInstance} 
-                manualPinLocation={manualPinLocation} 
+              <Map
+                parkingSpots={parkingSpots}
+                currentLocation={currentLocation}
+                onSpotClick={handleSpotClick}
+                onMapReady={setMapInstance}
+                manualPinLocation={manualPinLocation}
                 onManualPinMove={setManualPinLocation}
                 handshakeDeals={activeDealsForMap}
                 onHandshakeDealClick={handleHandshakeDealClick}
@@ -783,33 +920,56 @@ const Index = () => {
       </div>
 
       {/* Recenter Button - floating above bottom panel */}
-      <div className="fixed right-3 sm:right-6 z-30 transition-all duration-300" style={{
-      bottom: userParking ? "calc(12rem + 0.5rem)" : "calc(10rem + 0.5rem)"
-    }}>
-        <Button onClick={handleRecenter} size="icon" variant="outline" className="group h-12 w-12 rounded-full shadow-lg bg-card hover:bg-primary active:scale-95 touch-target" aria-label="Recenter map on my location">
+      <div
+        className="fixed right-3 sm:right-6 z-30 transition-all duration-300"
+        style={{
+          bottom: userParking ? "calc(12rem + 0.5rem)" : "calc(10rem + 0.5rem)",
+        }}
+      >
+        <Button
+          onClick={handleRecenter}
+          size="icon"
+          variant="outline"
+          className="group h-12 w-12 rounded-full shadow-lg bg-card hover:bg-primary active:scale-95 touch-target"
+          aria-label="Recenter map on my location"
+          style={{
+            touchAction: "manipulation",
+            WebkitTapHighlightColor: "transparent",
+          }}
+        >
           <Locate className="h-5 w-5 text-primary group-hover:text-white transition-colors" />
         </Button>
       </div>
 
       {/* Spot Details Dialog */}
-      <Dialog open={!!selectedSpot} onOpenChange={open => !open && setSelectedSpot(null)}>
+      <Dialog
+        open={!!selectedSpot}
+        onOpenChange={(open) => !open && setSelectedSpot(null)}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Parking Spot Available</DialogTitle>
           </DialogHeader>
           <div className="space-y-2 text-sm text-muted-foreground">
             <div>
-              <strong className="text-foreground">Distance:</strong> {selectedSpot && getDistanceToSpot(selectedSpot)}{" "}
-              away
+              <strong className="text-foreground">Distance:</strong>{" "}
+              {selectedSpot && getDistanceToSpot(selectedSpot)} away
             </div>
             <div>
               <strong className="text-foreground">Available for:</strong>{" "}
-              {selectedSpot?.availableSince && formatDistanceToNow(selectedSpot.availableSince)}
+              {selectedSpot?.availableSince &&
+                formatDistanceToNow(selectedSpot.availableSince)}
             </div>
             {selectedSpot?.availableSince && (
               <div className="pt-2">
-                <strong className="text-foreground">{t("app.availabilityChance")}:</strong>
-                <ProbabilityBar probability={calculateParkingProbability(selectedSpot.availableSince)} />
+                <strong className="text-foreground">
+                  {t("app.availabilityChance")}:
+                </strong>
+                <ProbabilityBar
+                  probability={calculateParkingProbability(
+                    selectedSpot.availableSince
+                  )}
+                />
               </div>
             )}
           </div>
@@ -819,20 +979,32 @@ const Index = () => {
               <>
                 {isIOS() ? (
                   <>
-                    <Button 
-                      onClick={() => handleNavigateToSpot(selectedSpot, 'apple')} 
-                      size="lg" 
+                    <Button
+                      onClick={() =>
+                        handleNavigateToSpot(selectedSpot, "apple")
+                      }
+                      size="lg"
                       variant="outline"
                       className="w-full gap-2"
+                      style={{
+                        touchAction: "manipulation",
+                        WebkitTapHighlightColor: "transparent",
+                      }}
                     >
                       <Navigation className="h-4 w-4" />
                       Navigate with Apple Maps
                     </Button>
-                    <Button 
-                      onClick={() => handleNavigateToSpot(selectedSpot, 'google')} 
-                      size="lg" 
+                    <Button
+                      onClick={() =>
+                        handleNavigateToSpot(selectedSpot, "google")
+                      }
+                      size="lg"
                       variant="ghost"
                       className="w-full gap-2 text-muted-foreground"
+                      style={{
+                        touchAction: "manipulation",
+                        WebkitTapHighlightColor: "transparent",
+                      }}
                     >
                       <MapPin className="h-4 w-4" />
                       Open in Google Maps
@@ -840,20 +1012,32 @@ const Index = () => {
                   </>
                 ) : (
                   <>
-                    <Button 
-                      onClick={() => handleNavigateToSpot(selectedSpot, 'google')} 
-                      size="lg" 
+                    <Button
+                      onClick={() =>
+                        handleNavigateToSpot(selectedSpot, "google")
+                      }
+                      size="lg"
                       variant="outline"
                       className="w-full gap-2"
+                      style={{
+                        touchAction: "manipulation",
+                        WebkitTapHighlightColor: "transparent",
+                      }}
                     >
                       <Navigation className="h-4 w-4" />
                       {t("app.openInGoogleMaps")}
                     </Button>
-                    <Button 
-                      onClick={() => handleNavigateToSpot(selectedSpot, 'apple')} 
-                      size="lg" 
+                    <Button
+                      onClick={() =>
+                        handleNavigateToSpot(selectedSpot, "apple")
+                      }
+                      size="lg"
                       variant="ghost"
                       className="w-full gap-2 text-muted-foreground"
+                      style={{
+                        touchAction: "manipulation",
+                        WebkitTapHighlightColor: "transparent",
+                      }}
                     >
                       <MapPin className="h-4 w-4" />
                       {t("app.openInAppleMaps")}
@@ -862,7 +1046,15 @@ const Index = () => {
                 )}
               </>
             )}
-            <Button onClick={handleTakeSpot} size="lg" className="w-full">
+            <Button
+              onClick={handleTakeSpot}
+              size="lg"
+              className="w-full"
+              style={{
+                touchAction: "manipulation",
+                WebkitTapHighlightColor: "transparent",
+              }}
+            >
               {t("app.takeSpot")}
             </Button>
           </div>
@@ -883,10 +1075,18 @@ const Index = () => {
               <strong>💡</strong> {t("app.setSpotHint")}
             </div>
           </div>
-          <Button onClick={() => {
-            setShowTimerDialog(false);
-            handleConfirmParking();
-          }} size="lg" className="w-full mt-4">
+          <Button
+            onClick={() => {
+              setShowTimerDialog(false);
+              handleConfirmParking();
+            }}
+            size="lg"
+            className="w-full mt-4"
+            style={{
+              touchAction: "manipulation",
+              WebkitTapHighlightColor: "transparent",
+            }}
+          >
             {t("app.setSpotButton")}
           </Button>
         </DialogContent>
@@ -903,26 +1103,38 @@ const Index = () => {
           <div className="space-y-4">
             {/* Compact Stats Line - always visible */}
             <div className="flex items-center justify-between">
-              <button 
+              <button
                 onClick={handleFocusNearestSpot}
                 className="flex items-center gap-2 hover:bg-accent/50 rounded-xl px-3 py-2 -ml-3 transition-colors active:scale-[0.98] touch-target"
+                style={{
+                  touchAction: "manipulation",
+                  WebkitTapHighlightColor: "transparent",
+                }}
               >
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                   <MapPin className="w-4 h-4 text-primary" />
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-xl font-bold text-foreground">{availableSpots}</span>
-                  <span className="text-xs text-muted-foreground">{t("app.spotsAvailable")}</span>
+                  <span className="text-xl font-bold text-foreground">
+                    {availableSpots}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {t("app.spotsAvailable")}
+                  </span>
                 </div>
               </button>
-              
+
               <div className="flex items-center gap-2 px-3 py-2">
                 <div className="w-8 h-8 rounded-full bg-success/10 flex items-center justify-center">
                   <Users className="w-4 h-4 text-success" />
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-xl font-bold text-foreground">{activeUsers}</span>
-                  <span className="text-xs text-muted-foreground">{t("app.activeUsers")}</span>
+                  <span className="text-xl font-bold text-foreground">
+                    {activeUsers}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {t("app.activeUsers")}
+                  </span>
                 </div>
               </div>
             </div>
@@ -934,20 +1146,31 @@ const Index = () => {
                   <Clock className="h-5 w-5 text-primary" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium text-muted-foreground">{t("app.parkingTimer")}</p>
-                  <p className="text-lg font-bold text-primary">{timeRemaining}</p>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    {t("app.parkingTimer")}
+                  </p>
+                  <p className="text-lg font-bold text-primary">
+                    {timeRemaining}
+                  </p>
                 </div>
               </div>
             )}
 
             {/* CTA Button */}
-            <ParkingButton onToggle={handleParkingToggle} isParked={!!userParking} />
+            <ParkingButton
+              onToggle={handleParkingToggle}
+              isParked={!!userParking}
+            />
           </div>
         </div>
       </div>
 
       {/* Auth Dialog */}
-      <AuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} onSuccess={handleAuthSuccess} />
+      <AuthDialog
+        open={showAuthDialog}
+        onOpenChange={setShowAuthDialog}
+        onSuccess={handleAuthSuccess}
+      />
 
       {/* Leaving Options Dialog */}
       <LeavingOptionsDialog
@@ -984,6 +1207,7 @@ const Index = () => {
         onOpenChange={setShowHandshakeRequestDialog}
         onRequest={handleRequestDeal}
       />
-    </div>;
+    </div>
+  );
 };
 export default Index;

@@ -18,11 +18,18 @@ interface AccountMenuProps {
   user: User;
   onSignOut: () => void;
   creditBalance?: number;
-  lastCreditChange?: { amount: number; type: 'gain' | 'loss' } | null;
+  lastCreditChange?: { amount: number; type: "gain" | "loss" } | null;
 }
 
-const AccountMenu = ({ user, onSignOut, creditBalance = 0, lastCreditChange }: AccountMenuProps) => {
-  const [displayName, setDisplayName] = useState<string>(user.email?.split("@")[0] || "User");
+const AccountMenu = ({
+  user,
+  onSignOut,
+  creditBalance = 0,
+  lastCreditChange,
+}: AccountMenuProps) => {
+  const [displayName, setDisplayName] = useState<string>(
+    user.email?.split("@")[0] || "User"
+  );
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -65,36 +72,56 @@ const AccountMenu = ({ user, onSignOut, creditBalance = 0, lastCreditChange }: A
 
   return (
     <div className="flex items-center gap-2">
-      <CreditDisplay balance={creditBalance} showLabel lastChange={lastCreditChange} />
+      <CreditDisplay
+        balance={creditBalance}
+        showLabel
+        lastChange={lastCreditChange}
+      />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="gap-2 touch-target hover:bg-transparent">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-2 touch-target hover:bg-transparent"
+            style={{
+              touchAction: "manipulation",
+              WebkitTapHighlightColor: "transparent",
+            }}
+          >
             <div className="h-7 w-7 rounded-full bg-primary/10 hover:bg-primary flex items-center justify-center transition-all duration-200 [&:hover>svg]:text-white">
               <UserIcon className="h-4 w-4 text-primary transition-colors duration-200" />
             </div>
-            <span className="hidden sm:inline max-w-[100px] truncate text-foreground">{displayName}</span>
+            <span className="hidden sm:inline max-w-[100px] truncate text-foreground">
+              {displayName}
+            </span>
             <ChevronDown className="h-3 w-3 text-muted-foreground" />
           </Button>
         </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{displayName}</p>
-            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-          </div>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link to="/account" className="flex items-center cursor-pointer">
-            <Settings className="mr-2 h-4 w-4" />
-            Mein Konto
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={onSignOut} className="text-destructive focus:text-destructive">
-          <LogOut className="mr-2 h-4 w-4" />
-          Sign Out
-        </DropdownMenuItem>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-medium leading-none">{displayName}</p>
+              <p className="text-xs text-muted-foreground truncate">
+                {user.email}
+              </p>
+            </div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link to="/account" className="flex items-center cursor-pointer">
+              <Settings className="mr-2 h-4 w-4" />
+              Mein Konto
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={onSignOut}
+            className="text-destructive focus:text-destructive"
+            style={{ touchAction: "manipulation" }}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Sign Out
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

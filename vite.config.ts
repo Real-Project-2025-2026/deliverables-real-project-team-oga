@@ -6,10 +6,27 @@ import { componentTagger } from "lovable-tagger";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "::",
+    host: "0.0.0.0",
     port: 8080,
+    hmr: {
+      host: "192.168.178.40",
+      port: 8080,
+    },
+    middlewareMode: false,
+    // SPA Routing Middleware
+    middleware: [
+      (req, res, next) => {
+        // Leite alle Routes ohne Dateiendung zu index.html
+        if (!req.url.includes(".") && !req.url.includes("node_modules")) {
+          req.url = "/index.html";
+        }
+        next();
+      },
+    ],
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [react(), mode === "development" && componentTagger()].filter(
+    Boolean
+  ),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

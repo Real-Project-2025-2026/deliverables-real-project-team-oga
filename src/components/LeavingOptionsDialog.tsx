@@ -1,6 +1,13 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Navigation, Handshake, Coins } from 'lucide-react';
+import { useRef } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Navigation, Handshake, Coins } from "lucide-react";
 interface LeavingOptionsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -13,9 +20,20 @@ const LeavingOptionsDialog = ({
   onOpenChange,
   onNormalLeave,
   onHandshakeOffer,
-  hasEnoughCredits
+  hasEnoughCredits,
 }: LeavingOptionsDialogProps) => {
-  return <Dialog open={open} onOpenChange={onOpenChange}>
+  const touchStartRef = useRef<number>(0);
+
+  const handleTouchEnd = (e: React.TouchEvent, callback: () => void) => {
+    const touchDuration = Date.now() - touchStartRef.current;
+    if (touchDuration < 200) {
+      e.preventDefault();
+      callback();
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Wie möchtest du gehen?</DialogTitle>
@@ -26,20 +44,49 @@ const LeavingOptionsDialog = ({
 
         <div className="space-y-3">
           {/* Normal Leave */}
-          <Button variant="outline" onClick={onNormalLeave} className="w-full h-auto py-4 flex flex-col items-start gap-2 hover:bg-transparent shadow-sm">
+          <Button
+            variant="outline"
+            onClick={onNormalLeave}
+            onTouchStart={() => {
+              touchStartRef.current = Date.now();
+            }}
+            onTouchEnd={(e) => handleTouchEnd(e, onNormalLeave)}
+            className="w-full h-auto py-4 flex flex-col items-start gap-2 hover:bg-transparent shadow-sm"
+            style={{
+              touchAction: "manipulation",
+              WebkitTapHighlightColor: "transparent",
+            }}
+          >
             <div className="flex items-center gap-2 w-full">
               <Navigation className="h-5 w-5 text-muted-foreground" />
-              <span className="font-semibold text-foreground">Einfach gehen</span>
+              <span className="font-semibold text-foreground">
+                Einfach gehen
+              </span>
             </div>
             <div className="flex items-center gap-1 text-xs text-green-600">
               <Coins className="h-3 w-3" />
               <span>+2 Credits zurück</span>
             </div>
-            {!hasEnoughCredits && <span className="text-xs text-destructive">Nicht genug Credits!</span>}
+            {!hasEnoughCredits && (
+              <span className="text-xs text-destructive">
+                Nicht genug Credits!
+              </span>
+            )}
           </Button>
 
           {/* Handshake */}
-          <Button className="w-full h-auto py-4 flex flex-col items-start gap-2" onClick={onHandshakeOffer}>
+          <Button
+            className="w-full h-auto py-4 flex flex-col items-start gap-2"
+            onClick={onHandshakeOffer}
+            onTouchStart={() => {
+              touchStartRef.current = Date.now();
+            }}
+            onTouchEnd={(e) => handleTouchEnd(e, onHandshakeOffer)}
+            style={{
+              touchAction: "manipulation",
+              WebkitTapHighlightColor: "transparent",
+            }}
+          >
             <div className="flex items-center gap-2 w-full">
               <Handshake className="h-5 w-5" />
               <span className="font-semibold">Handshake anbieten</span>
@@ -52,9 +99,11 @@ const LeavingOptionsDialog = ({
         </div>
 
         <p className="text-xs text-muted-foreground text-center mt-2">
-          Mit einem Handshake kannst du deinen Parkplatz direkt übergeben und Credits verdienen!
+          Mit einem Handshake kannst du deinen Parkplatz direkt übergeben und
+          Credits verdienen!
         </p>
       </DialogContent>
-    </Dialog>;
+    </Dialog>
+  );
 };
 export default LeavingOptionsDialog;

@@ -1,9 +1,16 @@
-import { HandshakeDeal } from '@/hooks/useHandshake';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Handshake, Clock, Coins } from 'lucide-react';
-import { format } from 'date-fns';
-import { de } from 'date-fns/locale';
+import { HandshakeDeal } from "@/hooks/useHandshake";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Handshake, Clock, Coins } from "lucide-react";
+import { format } from "date-fns";
+import { de } from "date-fns/locale";
+import { useRef } from "react";
 
 interface HandshakeRequestDialogProps {
   deal: HandshakeDeal | null;
@@ -12,15 +19,27 @@ interface HandshakeRequestDialogProps {
   onRequest: () => void;
 }
 
-const HandshakeRequestDialog = ({ 
-  deal, 
-  open, 
-  onOpenChange, 
-  onRequest 
+const HandshakeRequestDialog = ({
+  deal,
+  open,
+  onOpenChange,
+  onRequest,
 }: HandshakeRequestDialogProps) => {
+  const touchStartRef = useRef<number>(0);
+
+  const handleTouchEnd = (e: React.TouchEvent, callback: () => void) => {
+    const touchDuration = Date.now() - touchStartRef.current;
+    if (touchDuration < 200) {
+      e.preventDefault();
+      callback();
+    }
+  };
+
   if (!deal) return null;
 
-  const departureTime = deal.departure_time ? new Date(deal.departure_time) : null;
+  const departureTime = deal.departure_time
+    ? new Date(deal.departure_time)
+    : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -53,7 +72,9 @@ const HandshakeRequestDialog = ({
           <div className="p-3 rounded-lg border bg-card">
             <div className="flex items-center gap-2 mb-1">
               <Coins className="h-4 w-4 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">Kosten bei Abschluss:</p>
+              <p className="text-sm text-muted-foreground">
+                Kosten bei Abschluss:
+              </p>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-2xl font-bold text-orange-500">-10</span>
@@ -66,7 +87,7 @@ const HandshakeRequestDialog = ({
 
           {/* Info */}
           <p className="text-sm text-muted-foreground">
-            Wenn du diesen Deal annimmst, wartet der Geber auf deine Ankunft. 
+            Wenn du diesen Deal annimmst, wartet der Geber auf deine Ankunft.
             Der Parkplatz wird bei Abfahrt an dich übergeben.
           </p>
 
@@ -76,12 +97,28 @@ const HandshakeRequestDialog = ({
               variant="outline"
               className="flex-1"
               onClick={() => onOpenChange(false)}
+              onTouchStart={() => {
+                touchStartRef.current = Date.now();
+              }}
+              onTouchEnd={(e) => handleTouchEnd(e, () => onOpenChange(false))}
+              style={{
+                touchAction: "manipulation",
+                WebkitTapHighlightColor: "transparent",
+              }}
             >
               Abbrechen
             </Button>
             <Button
               className="flex-1"
               onClick={onRequest}
+              onTouchStart={() => {
+                touchStartRef.current = Date.now();
+              }}
+              onTouchEnd={(e) => handleTouchEnd(e, onRequest)}
+              style={{
+                touchAction: "manipulation",
+                WebkitTapHighlightColor: "transparent",
+              }}
             >
               <Handshake className="h-4 w-4 mr-2" />
               Deal annehmen

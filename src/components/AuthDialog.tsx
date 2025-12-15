@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,9 +9,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { z } from 'zod';
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
 
 const authSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -27,10 +27,21 @@ interface AuthDialogProps {
 const AuthDialog = ({ open, onOpenChange, onSuccess }: AuthDialogProps) => {
   const { toast } = useToast();
   const [isSignUp, setIsSignUp] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>(
+    {}
+  );
+  const touchStartRef = useRef<number>(0);
+
+  const handleTouchEnd = (e: React.TouchEvent, callback: () => void) => {
+    const touchDuration = Date.now() - touchStartRef.current;
+    if (touchDuration < 200) {
+      e.preventDefault();
+      callback();
+    }
+  };
 
   const validateForm = () => {
     try {
@@ -41,8 +52,8 @@ const AuthDialog = ({ open, onOpenChange, onSuccess }: AuthDialogProps) => {
       if (error instanceof z.ZodError) {
         const fieldErrors: { email?: string; password?: string } = {};
         error.errors.forEach((err) => {
-          if (err.path[0] === 'email') fieldErrors.email = err.message;
-          if (err.path[0] === 'password') fieldErrors.password = err.message;
+          if (err.path[0] === "email") fieldErrors.email = err.message;
+          if (err.path[0] === "password") fieldErrors.password = err.message;
         });
         setErrors(fieldErrors);
       }
@@ -52,9 +63,9 @@ const AuthDialog = ({ open, onOpenChange, onSuccess }: AuthDialogProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
-    
+
     setIsLoading(true);
 
     try {
@@ -69,10 +80,11 @@ const AuthDialog = ({ open, onOpenChange, onSuccess }: AuthDialogProps) => {
         });
 
         if (error) {
-          if (error.message.includes('already registered')) {
+          if (error.message.includes("already registered")) {
             toast({
               title: "Account Exists",
-              description: "This email is already registered. Try signing in instead.",
+              description:
+                "This email is already registered. Try signing in instead.",
               variant: "destructive",
             });
             setIsSignUp(false);
@@ -120,23 +132,26 @@ const AuthDialog = ({ open, onOpenChange, onSuccess }: AuthDialogProps) => {
   };
 
   const resetForm = () => {
-    setEmail('');
-    setPassword('');
+    setEmail("");
+    setPassword("");
     setErrors({});
   };
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => {
-      if (!isOpen) resetForm();
-      onOpenChange(isOpen);
-    }}>
+    <Dialog
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) resetForm();
+        onOpenChange(isOpen);
+      }}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{isSignUp ? 'Create Account' : 'Sign In'}</DialogTitle>
+          <DialogTitle>{isSignUp ? "Create Account" : "Sign In"}</DialogTitle>
           <DialogDescription>
-            {isSignUp 
-              ? 'Sign up to add and share parking spots with the community.'
-              : 'Sign in to your account to continue.'}
+            {isSignUp
+              ? "Sign up to add and share parking spots with the community."
+              : "Sign in to your account to continue."}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -168,14 +183,26 @@ const AuthDialog = ({ open, onOpenChange, onSuccess }: AuthDialogProps) => {
               <p className="text-sm text-destructive">{errors.password}</p>
             )}
           </div>
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Please wait...' : (isSignUp ? 'Sign Up' : 'Sign In')}
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isLoading}
+            onTouchStart={() => {
+              touchStartRef.current = Date.now();
+            }}
+            onTouchEnd={(e) => handleTouchEnd(e, () => {})}
+            style={{
+              touchAction: "manipulation",
+              WebkitTapHighlightColor: "transparent",
+            }}
+          >
+            {isLoading ? "Please wait..." : isSignUp ? "Sign Up" : "Sign In"}
           </Button>
         </form>
         <div className="text-center text-sm text-muted-foreground">
           {isSignUp ? (
             <>
-              Already have an account?{' '}
+              Already have an account?{" "}
               <button
                 type="button"
                 onClick={() => setIsSignUp(false)}
@@ -186,7 +213,7 @@ const AuthDialog = ({ open, onOpenChange, onSuccess }: AuthDialogProps) => {
             </>
           ) : (
             <>
-              Don't have an account?{' '}
+              Don't have an account?{" "}
               <button
                 type="button"
                 onClick={() => setIsSignUp(true)}
