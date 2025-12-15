@@ -726,6 +726,7 @@ const Index = () => {
                 onManualPinMove={setManualPinLocation}
                 handshakeDeals={activeDealsForMap}
                 onHandshakeDealClick={handleHandshakeDealClick}
+                currentUserId={user?.id}
               />
             );
           })()}
