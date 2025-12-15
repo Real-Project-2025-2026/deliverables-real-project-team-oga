@@ -145,11 +145,9 @@ All colors MUST be HSL.
 }
 
 /* Handshake Marker Styles */
-.handshake-marker-el {
-  position: relative;
-}
-
 .handshake-marker-el svg {
+  display: block;
+  position: relative;
   display: block;
 }
 
