@@ -43,7 +43,6 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
   const markers = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const handshakeMarkers = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const currentLocationMarker = useRef<mapboxgl.Marker | null>(null);
-  const manualPinMarker = useRef<mapboxgl.Marker | null>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapboxToken, setMapboxToken] = useState<string | null>(null);
   const [tokenInput, setTokenInput] = useState('');
@@ -212,34 +211,7 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
     initMap();
   }, [mapboxToken, onMapReady, handleClearToken, onManualPinMove, currentLocation, status]);
 
-  // Update manual pin - create if needed, update position, or remove
-  useEffect(() => {
-    if (!map.current || !isMapLoaded) return;
-
-    if (manualPinLocation) {
-      // Create marker if it doesn't exist
-      if (!manualPinMarker.current) {
-        const el = document.createElement('div');
-        el.style.cssText = 'pointer-events: none; display: flex; align-items: center; justify-content: center;';
-        el.innerHTML = `
-          <svg width="40" height="48" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 20 12 20s12-11 12-20c0-6.627-5.373-12-12-12z" 
-                  fill="hsl(211, 100%, 50%)"
-                  stroke="white" stroke-width="2"/>
-            <circle cx="12" cy="12" r="4" fill="white"/>
-          </svg>
-        `;
-        manualPinMarker.current = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
-          .setLngLat(manualPinLocation)
-          .addTo(map.current);
-      } else {
-        manualPinMarker.current.setLngLat(manualPinLocation);
-      }
-    } else if (manualPinMarker.current) {
-      manualPinMarker.current.remove();
-      manualPinMarker.current = null;
-    }
-  }, [manualPinLocation, isMapLoaded]);
+  // Manual pin is now rendered as a fixed CSS element in JSX for smooth movement
 
   // Update current location marker
   useEffect(() => {
@@ -488,6 +460,28 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
       
       {/* Always render the map container */}
       <div ref={mapContainer} className="absolute inset-0 rounded-3xl overflow-hidden" />
+      
+      {/* Fixed center pin - always centered, smooth movement */}
+      {manualPinLocation && (
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
+          <svg 
+            width="40" 
+            height="48" 
+            viewBox="0 0 24 32" 
+            fill="none" 
+            xmlns="http://www.w3.org/2000/svg"
+            style={{ transform: 'translateY(-24px)' }}
+          >
+            <path 
+              d="M12 0C5.373 0 0 5.373 0 12c0 9 12 20 12 20s12-11 12-20c0-6.627-5.373-12-12-12z" 
+              fill="hsl(211, 100%, 50%)"
+              stroke="white" 
+              strokeWidth="2"
+            />
+            <circle cx="12" cy="12" r="4" fill="white"/>
+          </svg>
+        </div>
+      )}
       
       {/* Loading overlay */}
       {status === 'loading' && (
