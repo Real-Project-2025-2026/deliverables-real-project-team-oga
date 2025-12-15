@@ -297,9 +297,17 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
         : 'hsl(0, 0%, 70%)';
 
       const el = document.createElement('div');
+      el.style.width = '48px';
+      el.style.height = '56px';
+      el.style.cursor = 'pointer';
+      el.style.display = 'flex';
+      el.style.alignItems = 'flex-end';
+      el.style.justifyContent = 'center';
+      el.style.position = 'relative';
+      
       el.innerHTML = `
-        <div style="position: relative; display: inline-block;">
-          <svg width="32" height="40" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <div style="position: relative; display: inline-block; pointer-events: none;">
+          <svg width="32" height="40" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="pointer-events: none;">
             <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 20 12 20s12-11 12-20c0-6.627-5.373-12-12-12z" 
                   fill="${markerColor}" 
                   stroke="white" stroke-width="2"/>
@@ -321,14 +329,17 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
               text-align: center;
               box-shadow: 0 1px 3px rgba(0,0,0,0.3);
               font-family: system-ui, sans-serif;
+              pointer-events: none;
             ">${probability}%</div>
           ` : ''}
         </div>
       `;
-      el.style.cursor = 'pointer';
 
       if (spot.available && onSpotClick) {
-        el.addEventListener('click', () => onSpotClick(spot.id));
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          onSpotClick(spot.id);
+        });
       }
 
       const marker = new mapboxgl.Marker(el)
@@ -361,20 +372,30 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
 
       const el = document.createElement('div');
       el.className = 'handshake-marker-el';
+      el.style.width = '48px';
+      el.style.height = '56px';
+      el.style.cursor = 'pointer';
+      el.style.display = 'flex';
+      el.style.alignItems = 'flex-end';
+      el.style.justifyContent = 'center';
+      el.style.position = 'relative';
+      el.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))';
+      
       el.innerHTML = `
-        <svg width="32" height="40" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg width="32" height="40" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="pointer-events: none;">
           <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 20 12 20s12-11 12-20c0-6.627-5.373-12-12-12z" 
                 fill="hsl(38, 92%, 50%)" 
                 stroke="white" stroke-width="2"/>
           <text x="12" y="16" text-anchor="middle" fill="white" font-size="10">🤝</text>
         </svg>
       `;
-      el.style.cursor = 'pointer';
-      el.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))';
 
       // Only allow clicking on 'open' deals (for other users to request)
       if (deal.status === 'open' && onHandshakeDealClick) {
-        el.addEventListener('click', () => onHandshakeDealClick(deal.id));
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          onHandshakeDealClick(deal.id);
+        });
       }
 
       try {
