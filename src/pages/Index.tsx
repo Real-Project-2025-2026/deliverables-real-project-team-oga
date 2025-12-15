@@ -34,8 +34,8 @@ interface ParkingSpot {
 interface UserParking {
   spotId: string;
   parkingTime: Date;
-  returnTime: Date;
-  durationMinutes: number;
+  returnTime: Date | null;
+  durationMinutes: number | null;
 }
 
 const PARKING_SESSION_KEY = 'ogap_parking_session';
@@ -55,7 +55,7 @@ const Index = () => {
         return {
           ...parsed,
           parkingTime: new Date(parsed.parkingTime),
-          returnTime: new Date(parsed.returnTime)
+          returnTime: parsed.returnTime ? new Date(parsed.returnTime) : null
         };
       } catch {
         return null;
@@ -64,7 +64,7 @@ const Index = () => {
     return null;
   });
   const [showTimerDialog, setShowTimerDialog] = useState(false);
-  const [parkingDuration, setParkingDuration] = useState<string>("60");
+  
   const [timeRemaining, setTimeRemaining] = useState<string>("");
   const [mapInstance, setMapInstance] = useState<any>(null);
   const [manualPinLocation, setManualPinLocation] = useState<[number, number] | null>(null);
@@ -331,13 +331,13 @@ const Index = () => {
 
   // Timer effect
   useEffect(() => {
-    if (!userParking) {
+    if (!userParking || !userParking.returnTime) {
       setTimeRemaining("");
       return;
     }
     const updateTimer = () => {
       const now = new Date();
-      const minutesLeft = differenceInMinutes(userParking.returnTime, now);
+      const minutesLeft = differenceInMinutes(userParking.returnTime!, now);
       if (minutesLeft <= 0) {
         setTimeRemaining("Time expired!");
         toast({
@@ -555,18 +555,8 @@ const Index = () => {
     }
   };
 
-  const handleSetParkingTimer = async () => {
-    const duration = parseInt(parkingDuration);
-    if (isNaN(duration) || duration <= 0) {
-      toast({
-        title: "Invalid Duration",
-        description: "Please enter a valid number of minutes.",
-        variant: "destructive"
-      });
-      return;
-    }
+  const handleConfirmParking = async () => {
     const now = new Date();
-    const returnTime = new Date(now.getTime() + duration * 60000);
     if (selectedSpot) {
       // Taking an existing spot - update in database
       const {
@@ -587,10 +577,14 @@ const Index = () => {
       setUserParking({
         spotId: selectedSpot.id,
         parkingTime: now,
-        returnTime: returnTime,
-        durationMinutes: duration
+        returnTime: null,
+        durationMinutes: null
       });
       setSelectedSpot(null);
+      toast({
+        title: "Parkplatz gesetzt",
+        description: "Du hast den Parkplatz übernommen."
+      });
     } else {
       // Creating a new spot at manual pin location or current location
       const spotLocation = manualPinLocation || currentLocation;
@@ -616,16 +610,16 @@ const Index = () => {
       setUserParking({
         spotId: newSpotId,
         parkingTime: now,
-        returnTime: returnTime,
-        durationMinutes: duration
+        returnTime: null,
+        durationMinutes: null
+      });
+      toast({
+        title: "Neuer Parkplatz gemeldet!",
+        description: "+4 Credits für das Melden eines neuen Parkplatzes."
       });
     }
     setShowTimerDialog(false);
     setManualPinLocation(null);
-    toast({
-      title: "Parking Timer Set",
-      description: `You'll be reminded in ${duration} minutes.`
-    });
   };
   const handleSpotClick = (spotId: string) => {
     const spot = parkingSpots.find(s => s.id === spotId);
@@ -838,29 +832,26 @@ const Index = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Parking Timer Dialog */}
+      {/* Set Parking Spot Dialog */}
       <Dialog open={showTimerDialog} onOpenChange={setShowTimerDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Set Parking Duration</DialogTitle>
+            <DialogTitle>Parkplatz setzen</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="duration">How long will you park? (minutes)</Label>
-              <Input id="duration" type="number" value={parkingDuration} onChange={e => setParkingDuration(e.target.value)} placeholder="60" min="1" />
-            </div>
-            <div className="text-sm text-muted-foreground">
-              You'll receive a notification 5 minutes before your time expires.
+            <p className="text-sm text-muted-foreground">
+              Du parkst hier? Bestätige deinen Parkplatz.
+            </p>
+            <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 text-sm text-primary">
+              <strong>Tipp:</strong> Wenn du einen komplett neuen Parkplatz meldest, erhältst du <strong>+4 Credits</strong>!
             </div>
           </div>
-          <div className="flex gap-2 pt-4">
-            <Button variant="outline" onClick={() => setShowTimerDialog(false)} className="flex-1">
-              Take parking spot
-            </Button>
-            <Button onClick={handleSetParkingTimer} className="flex-1">
-              Set Timer
-            </Button>
-          </div>
+          <Button onClick={() => {
+            setShowTimerDialog(false);
+            handleConfirmParking();
+          }} size="lg" className="w-full mt-4">
+            Parkplatz setzen
+          </Button>
         </DialogContent>
       </Dialog>
 
