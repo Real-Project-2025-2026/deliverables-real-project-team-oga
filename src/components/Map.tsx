@@ -288,25 +288,17 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
       if (spot.available && onSpotClick) {
         let eventHandled = false;
         
-        const handleInteraction = (e: Event, source: string) => {
+        const handleInteraction = (e: Event) => {
           if (eventHandled) return;
           e.preventDefault();
           e.stopPropagation();
-          e.stopImmediatePropagation();
           eventHandled = true;
-          console.log(`Parking spot ${source}:`, spot.id);
           onSpotClick(spot.id);
-          setTimeout(() => { eventHandled = false; }, 300);
+          setTimeout(() => { eventHandled = false; }, 150);
         };
         
-        // Touch events for mobile
-        el.addEventListener('touchend', (e) => handleInteraction(e, 'touched'), { passive: false, capture: true });
-        
-        // Mouse events for desktop - mousedown is more reliable than click on map overlays
-        el.addEventListener('mousedown', (e) => handleInteraction(e, 'mousedown'), { passive: false, capture: true });
-        
-        // Click as fallback
-        el.addEventListener('click', (e) => handleInteraction(e, 'clicked'), { passive: false, capture: true });
+        // Single click handler - works on both mobile and desktop with touch-action: manipulation
+        el.addEventListener('click', handleInteraction, { passive: false });
       }
 
       const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
@@ -354,25 +346,17 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
       if (deal.status === 'open' && onHandshakeDealClick) {
         let eventHandled = false;
         
-        const handleInteraction = (e: Event, source: string) => {
+        const handleInteraction = (e: Event) => {
           if (eventHandled) return;
           e.preventDefault();
           e.stopPropagation();
-          e.stopImmediatePropagation();
           eventHandled = true;
-          console.log(`Handshake deal ${source}:`, deal.id);
           onHandshakeDealClick(deal.id);
-          setTimeout(() => { eventHandled = false; }, 300);
+          setTimeout(() => { eventHandled = false; }, 150);
         };
         
-        // Touch events for mobile
-        el.addEventListener('touchend', (e) => handleInteraction(e, 'touched'), { passive: false, capture: true });
-        
-        // Mouse events for desktop
-        el.addEventListener('mousedown', (e) => handleInteraction(e, 'mousedown'), { passive: false, capture: true });
-        
-        // Click as fallback
-        el.addEventListener('click', (e) => handleInteraction(e, 'clicked'), { passive: false, capture: true });
+        // Single click handler - works on both mobile and desktop with touch-action: manipulation
+        el.addEventListener('click', handleInteraction, { passive: false });
       }
 
       try {
