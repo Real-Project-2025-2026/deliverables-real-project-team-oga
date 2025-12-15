@@ -314,24 +314,27 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
       `;
 
       if (spot.available && onSpotClick) {
-        let touchHandled = false;
+        let eventHandled = false;
         
-        el.addEventListener('touchend', (e: Event) => {
+        const handleInteraction = (e: Event, source: string) => {
+          if (eventHandled) return;
           e.preventDefault();
           e.stopPropagation();
-          touchHandled = true;
-          console.log('Parking spot touched:', spot.id);
+          e.stopImmediatePropagation();
+          eventHandled = true;
+          console.log(`Parking spot ${source}:`, spot.id);
           onSpotClick(spot.id);
-          setTimeout(() => { touchHandled = false; }, 300);
-        }, { passive: false });
+          setTimeout(() => { eventHandled = false; }, 300);
+        };
         
-        el.addEventListener('click', (e: Event) => {
-          if (touchHandled) return;
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('Parking spot clicked:', spot.id);
-          onSpotClick(spot.id);
-        }, { passive: false });
+        // Touch events for mobile
+        el.addEventListener('touchend', (e) => handleInteraction(e, 'touched'), { passive: false, capture: true });
+        
+        // Mouse events for desktop - mousedown is more reliable than click on map overlays
+        el.addEventListener('mousedown', (e) => handleInteraction(e, 'mousedown'), { passive: false, capture: true });
+        
+        // Click as fallback
+        el.addEventListener('click', (e) => handleInteraction(e, 'clicked'), { passive: false, capture: true });
       }
 
       const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
@@ -377,23 +380,27 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
 
       // Only allow clicking on 'open' deals (for other users to request)
       if (deal.status === 'open' && onHandshakeDealClick) {
-        let touchHandled = false;
+        let eventHandled = false;
         
-        el.addEventListener('touchend', (e) => {
+        const handleInteraction = (e: Event, source: string) => {
+          if (eventHandled) return;
           e.preventDefault();
           e.stopPropagation();
-          touchHandled = true;
-          console.log('Handshake deal touched:', deal.id);
+          e.stopImmediatePropagation();
+          eventHandled = true;
+          console.log(`Handshake deal ${source}:`, deal.id);
           onHandshakeDealClick(deal.id);
-          setTimeout(() => { touchHandled = false; }, 300);
-        }, { passive: false });
+          setTimeout(() => { eventHandled = false; }, 300);
+        };
         
-        el.addEventListener('click', (e) => {
-          if (touchHandled) return;
-          e.stopPropagation();
-          console.log('Handshake deal clicked:', deal.id);
-          onHandshakeDealClick(deal.id);
-        }, { passive: false });
+        // Touch events for mobile
+        el.addEventListener('touchend', (e) => handleInteraction(e, 'touched'), { passive: false, capture: true });
+        
+        // Mouse events for desktop
+        el.addEventListener('mousedown', (e) => handleInteraction(e, 'mousedown'), { passive: false, capture: true });
+        
+        // Click as fallback
+        el.addEventListener('click', (e) => handleInteraction(e, 'clicked'), { passive: false, capture: true });
       }
 
       try {
