@@ -467,15 +467,15 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
       <style>{`
         .location-dot {
           width: 16px; height: 16px;
-          background: hsl(142, 76%, 36%);
+          background: hsl(217, 89%, 55%);
           border: 3px solid white; border-radius: 50%;
           position: absolute; top: 50%; left: 50%;
           transform: translate(-50%, -50%);
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3); z-index: 2;
+          box-shadow: 0 2px 8px rgba(66, 133, 244, 0.5); z-index: 2;
         }
         .pulse-ring {
           width: 40px; height: 40px;
-          border: 3px solid hsl(142, 76%, 36%); border-radius: 50%;
+          border: 3px solid hsl(217, 89%, 55%); border-radius: 50%;
           position: absolute; top: 50%; left: 50%;
           transform: translate(-50%, -50%);
           animation: pulse 2s ease-out infinite; opacity: 0; z-index: 1;
