@@ -193,27 +193,6 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
           if (!map.current) return;
           
           const center = map.current.getCenter();
-          
-          if (!manualPinMarker.current) {
-            const el = document.createElement('div');
-            el.innerHTML = `
-              <svg width="40" height="50" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 20 12 20s12-11 12-20c0-6.627-5.373-12-12-12z" 
-                      fill="hsl(142, 76%, 36%)" stroke="white" stroke-width="2"/>
-                <text x="12" y="16" text-anchor="middle" fill="white" font-size="14" font-weight="bold">P</text>
-              </svg>
-            `;
-            el.style.cursor = 'default';
-            el.style.filter = 'drop-shadow(0 4px 8px rgba(0,0,0,0.4))';
-            el.style.pointerEvents = 'none';
-
-            manualPinMarker.current = new mapboxgl.Marker(el, { draggable: false })
-              .setLngLat([center.lng, center.lat])
-              .addTo(map.current);
-          } else {
-            manualPinMarker.current.setLngLat([center.lng, center.lat]);
-          }
-          
           onManualPinMove?.([center.lng, center.lat]);
         });
 
