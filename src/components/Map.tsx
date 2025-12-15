@@ -277,16 +277,10 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
 
       const el = document.createElement('div');
       el.className = 'parking-marker';
-      el.style.width = '44px';
-      el.style.height = '44px';
-      el.style.cursor = 'pointer';
-      el.style.background = 'transparent';
-      el.style.display = 'flex';
-      el.style.alignItems = 'center';
-      el.style.justifyContent = 'center';
+      el.style.cssText = 'width: 48px; height: 48px; cursor: pointer; display: flex; align-items: center; justify-content: center; touch-action: manipulation; -webkit-tap-highlight-color: transparent;';
       
       el.innerHTML = `
-        <svg width="32" height="40" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg width="40" height="48" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="pointer-events: none;">
           <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 20 12 20s12-11 12-20c0-6.627-5.373-12-12-12z" 
                 fill="${markerColor}" 
                 stroke="white" stroke-width="2"/>
@@ -294,13 +288,15 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
         </svg>
       `;
 
-      // Direct onclick assignment instead of addEventListener
       if (spot.available && onSpotClick) {
-        el.onclick = function(e) {
-          console.log('Marker clicked:', spot.id);
+        const handleClick = (e: Event) => {
+          e.preventDefault();
           e.stopPropagation();
+          console.log('Parking spot clicked:', spot.id);
           onSpotClick(spot.id);
         };
+        el.addEventListener('click', handleClick, { passive: false });
+        el.addEventListener('touchstart', handleClick, { passive: false });
       }
 
       const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
