@@ -302,7 +302,7 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
 
       const el = document.createElement('div');
       el.className = 'parking-marker';
-      el.style.cssText = 'width: 48px; height: 48px; cursor: pointer; display: flex; align-items: center; justify-content: center; touch-action: manipulation; -webkit-tap-highlight-color: transparent;';
+      el.style.cssText = 'width: 48px; height: 48px; cursor: pointer; display: flex; align-items: center; justify-content: center; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; pointer-events: auto; z-index: 10;';
       
       el.innerHTML = `
         <svg width="40" height="48" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="pointer-events: none;">
@@ -314,14 +314,24 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
       `;
 
       if (spot.available && onSpotClick) {
-        const handleClick = (e: Event) => {
+        let touchHandled = false;
+        
+        el.addEventListener('touchend', (e: Event) => {
+          e.preventDefault();
+          e.stopPropagation();
+          touchHandled = true;
+          console.log('Parking spot touched:', spot.id);
+          onSpotClick(spot.id);
+          setTimeout(() => { touchHandled = false; }, 300);
+        }, { passive: false });
+        
+        el.addEventListener('click', (e: Event) => {
+          if (touchHandled) return;
           e.preventDefault();
           e.stopPropagation();
           console.log('Parking spot clicked:', spot.id);
           onSpotClick(spot.id);
-        };
-        el.addEventListener('click', handleClick, { passive: false });
-        el.addEventListener('touchstart', handleClick, { passive: false });
+        }, { passive: false });
       }
 
       const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
@@ -354,8 +364,7 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
 
       const el = document.createElement('div');
       el.className = 'handshake-marker-el';
-      el.style.cursor = 'pointer';
-      el.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))';
+      el.style.cssText = 'cursor: pointer; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; pointer-events: auto; z-index: 10;';
       
       el.innerHTML = `
         <svg width="32" height="40" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -368,15 +377,23 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
 
       // Only allow clicking on 'open' deals (for other users to request)
       if (deal.status === 'open' && onHandshakeDealClick) {
-        el.addEventListener('click', (e) => {
-          e.stopPropagation();
-          onHandshakeDealClick(deal.id);
-        });
+        let touchHandled = false;
+        
         el.addEventListener('touchend', (e) => {
           e.preventDefault();
           e.stopPropagation();
+          touchHandled = true;
+          console.log('Handshake deal touched:', deal.id);
           onHandshakeDealClick(deal.id);
-        });
+          setTimeout(() => { touchHandled = false; }, 300);
+        }, { passive: false });
+        
+        el.addEventListener('click', (e) => {
+          if (touchHandled) return;
+          e.stopPropagation();
+          console.log('Handshake deal clicked:', deal.id);
+          onHandshakeDealClick(deal.id);
+        }, { passive: false });
       }
 
       try {
