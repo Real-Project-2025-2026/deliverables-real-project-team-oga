@@ -607,6 +607,21 @@ const Index = () => {
         });
         return;
       }
+      
+      // Award +4 credits for reporting a new spot
+      try {
+        const response = await supabase.functions.invoke('process-credits', {
+          body: { action: 'new_spot_reported', spotId: newSpotId }
+        });
+        if (response.error) {
+          console.error('Error awarding credits:', response.error);
+        } else {
+          refreshCredits();
+        }
+      } catch (e) {
+        console.error('Error calling process-credits:', e);
+      }
+      
       setUserParking({
         spotId: newSpotId,
         parkingTime: now,
@@ -615,7 +630,7 @@ const Index = () => {
       });
       toast({
         title: "Neuer Parkplatz gemeldet!",
-        description: "+4 Credits für das Melden eines neuen Parkplatzes."
+        description: "+4 Credits erhalten!"
       });
     }
     setShowTimerDialog(false);
