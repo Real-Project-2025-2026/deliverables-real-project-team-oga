@@ -340,7 +340,10 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
       }
 
       try {
-        const marker = new mapboxgl.Marker(el)
+        const marker = new mapboxgl.Marker({
+          element: el,
+          anchor: 'bottom'
+        })
           .setLngLat([deal.longitude, deal.latitude])
           .addTo(map.current);
 
