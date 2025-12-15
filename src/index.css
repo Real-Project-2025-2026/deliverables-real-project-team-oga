@@ -143,3 +143,41 @@ All colors MUST be HSL.
     min-width: 44px;
   }
 }
+
+/* Handshake Marker Styles */
+.handshake-marker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 52px;
+}
+
+.handshake-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px;
+  height: 60px;
+  background: hsl(var(--warning) / 0.3);
+  border-radius: 50%;
+  animation: handshake-pulse-animation 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes handshake-pulse-animation {
+  0% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.8;
+  }
+}
