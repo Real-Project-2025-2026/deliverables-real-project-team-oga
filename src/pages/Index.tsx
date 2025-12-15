@@ -383,7 +383,7 @@ const Index = () => {
   };
 
   const handleNormalLeave = async () => {
-    if (!userParking) return;
+    if (!userParking || !user) return;
     
     // Check credits
     if (!credits.canPark) {
@@ -405,6 +405,30 @@ const Index = () => {
         variant: "destructive"
       });
       return;
+    }
+
+    // Get spot coordinates for history
+    const spot = parkingSpots.find(s => s.id === userParking.spotId);
+    const spotCoords = spot?.coordinates || currentLocation;
+
+    // Calculate duration
+    const now = new Date();
+    const durationMinutes = Math.round((now.getTime() - userParking.parkingTime.getTime()) / 60000);
+
+    // Save to parking history
+    const { error: historyError } = await supabase.from("parking_history").insert({
+      user_id: user.id,
+      spot_id: userParking.spotId,
+      latitude: spotCoords[1],
+      longitude: spotCoords[0],
+      started_at: userParking.parkingTime.toISOString(),
+      ended_at: now.toISOString(),
+      duration_minutes: durationMinutes
+    });
+
+    if (historyError) {
+      console.error("Error saving parking history:", historyError);
+      // Continue anyway - history is not critical
     }
 
     // Update spot in database to be available again
