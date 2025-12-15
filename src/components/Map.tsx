@@ -319,20 +319,17 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
       console.log('Creating handshake marker for:', deal.id, 'status:', deal.status);
 
       const el = document.createElement('div');
+      el.className = 'handshake-marker-el';
       el.innerHTML = `
-        <div class="handshake-marker">
-          <svg width="44" height="52" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 20 12 20s12-11 12-20c0-6.627-5.373-12-12-12z" 
-                  fill="hsl(38, 92%, 50%)" 
-                  stroke="white" stroke-width="2"/>
-            <text x="12" y="16" text-anchor="middle" fill="white" font-size="12" font-weight="bold">🤝</text>
-          </svg>
-          <div class="handshake-pulse"></div>
-        </div>
+        <svg width="32" height="40" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 20 12 20s12-11 12-20c0-6.627-5.373-12-12-12z" 
+                fill="hsl(38, 92%, 50%)" 
+                stroke="white" stroke-width="2"/>
+          <text x="12" y="16" text-anchor="middle" fill="white" font-size="10">🤝</text>
+        </svg>
       `;
       el.style.cursor = 'pointer';
-      el.style.position = 'relative';
-      el.style.zIndex = '1000';
+      el.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))';
 
       // Only allow clicking on 'open' deals (for other users to request)
       if (deal.status === 'open' && onHandshakeDealClick) {
@@ -340,10 +337,7 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
       }
 
       try {
-        const marker = new mapboxgl.Marker({
-          element: el,
-          anchor: 'bottom'
-        })
+        const marker = new mapboxgl.Marker(el)
           .setLngLat([deal.longitude, deal.latitude])
           .addTo(map.current);
 
@@ -422,22 +416,6 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
         @keyframes pulse {
           0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
           100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
-        }
-        .handshake-marker {
-          position: relative;
-          filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
-        }
-        .handshake-pulse {
-          position: absolute;
-          top: 6px; left: 6px;
-          width: 32px; height: 32px;
-          border: 3px solid hsl(38, 92%, 50%);
-          border-radius: 50%;
-          animation: handshakePulse 1.5s ease-out infinite;
-        }
-        @keyframes handshakePulse {
-          0% { transform: scale(0.8); opacity: 1; }
-          100% { transform: scale(2); opacity: 0; }
         }
       `}</style>
       
