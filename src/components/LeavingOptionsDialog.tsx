@@ -31,7 +31,7 @@ const LeavingOptionsDialog = ({
           {/* Normal Leave */}
           <Button
             variant="outline"
-            className="w-full h-auto py-4 flex flex-col items-start gap-2"
+            className="w-full h-auto py-4 flex flex-col items-start gap-2 hover:bg-transparent"
             onClick={onNormalLeave}
           >
             <div className="flex items-center gap-2 w-full">
