@@ -4,11 +4,13 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
+import { calculateParkingProbability, getProbabilityColor } from '@/lib/parkingProbability';
 
 interface ParkingSpot {
   id: string;
   coordinates: [number, number];
   available: boolean;
+  availableSince?: Date;
 }
 
 interface HandshakeDeal {
@@ -286,17 +288,44 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
         return;
       }
 
+      // Calculate probability for available spots
+      const probability = spot.available && spot.availableSince 
+        ? calculateParkingProbability(spot.availableSince) 
+        : 100;
+      const markerColor = spot.available 
+        ? getProbabilityColor(probability) 
+        : 'hsl(0, 0%, 70%)';
+
       const el = document.createElement('div');
       el.innerHTML = `
-        <svg width="32" height="40" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 20 12 20s12-11 12-20c0-6.627-5.373-12-12-12z" 
-                fill="${spot.available ? 'hsl(211, 100%, 50%)' : 'hsl(0, 0%, 70%)'}" 
-                stroke="white" stroke-width="2"/>
-          <circle cx="12" cy="12" r="4" fill="white"/>
-        </svg>
+        <div style="position: relative; display: inline-block;">
+          <svg width="32" height="40" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 20 12 20s12-11 12-20c0-6.627-5.373-12-12-12z" 
+                  fill="${markerColor}" 
+                  stroke="white" stroke-width="2"/>
+            <circle cx="12" cy="12" r="4" fill="white"/>
+          </svg>
+          ${spot.available ? `
+            <div style="
+              position: absolute;
+              top: -6px;
+              right: -10px;
+              background: ${markerColor};
+              color: white;
+              font-size: 9px;
+              font-weight: bold;
+              padding: 1px 3px;
+              border-radius: 6px;
+              border: 1.5px solid white;
+              min-width: 24px;
+              text-align: center;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+              font-family: system-ui, sans-serif;
+            ">${probability}%</div>
+          ` : ''}
+        </div>
       `;
       el.style.cursor = 'pointer';
-      el.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))';
 
       if (spot.available && onSpotClick) {
         el.addEventListener('click', () => onSpotClick(spot.id));

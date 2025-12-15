@@ -89,3 +89,14 @@ export function getProbabilityLevel(probability: number): ProbabilityLevel {
   if (probability >= 30) return 'low';
   return 'veryLow';
 }
+
+/**
+ * Get a color for the probability value (HSL interpolation from red to green)
+ */
+export function getProbabilityColor(probability: number): string {
+  // Clamp probability between 0 and 100
+  const p = Math.max(0, Math.min(100, probability));
+  // Hue: 0 (red) → 142 (green)
+  const hue = Math.round((p / 100) * 142);
+  return `hsl(${hue}, 76%, 42%)`;
+}
