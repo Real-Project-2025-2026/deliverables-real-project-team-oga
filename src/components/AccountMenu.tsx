@@ -18,9 +18,10 @@ interface AccountMenuProps {
   user: User;
   onSignOut: () => void;
   creditBalance?: number;
+  lastCreditChange?: { amount: number; type: 'gain' | 'loss' } | null;
 }
 
-const AccountMenu = ({ user, onSignOut, creditBalance = 0 }: AccountMenuProps) => {
+const AccountMenu = ({ user, onSignOut, creditBalance = 0, lastCreditChange }: AccountMenuProps) => {
   const [displayName, setDisplayName] = useState<string>(user.email?.split("@")[0] || "User");
 
   useEffect(() => {
@@ -64,7 +65,7 @@ const AccountMenu = ({ user, onSignOut, creditBalance = 0 }: AccountMenuProps) =
 
   return (
     <div className="flex items-center gap-2">
-      <CreditDisplay balance={creditBalance} showLabel />
+      <CreditDisplay balance={creditBalance} showLabel lastChange={lastCreditChange} />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="sm" className="gap-2 touch-target hover:bg-transparent">

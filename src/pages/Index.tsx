@@ -88,8 +88,15 @@ const Index = () => {
     }
   }, [userParking]);
 
+  // Credit change state for animation
+  const [lastCreditChange, setLastCreditChange] = useState<{ amount: number; type: 'gain' | 'loss' } | null>(null);
+  
   // Credit and Handshake hooks
-  const { credits, deductCredits, refreshCredits } = useCredits(user);
+  const { credits, deductCredits, refreshCredits } = useCredits(user, (change) => {
+    setLastCreditChange(change);
+    // Clear after animation
+    setTimeout(() => setLastCreditChange(null), 2500);
+  });
   const { 
     myDeal, 
     activeDeals, 
@@ -736,7 +743,7 @@ const Index = () => {
               </Button>
             )}
             {user ? (
-              <AccountMenu user={user} onSignOut={handleSignOut} creditBalance={credits.balance} />
+              <AccountMenu user={user} onSignOut={handleSignOut} creditBalance={credits.balance} lastCreditChange={lastCreditChange} />
             ) : (
               <Button variant="outline" size="sm" onClick={() => setShowAuthDialog(true)} className="touch-target">
                 Sign In
