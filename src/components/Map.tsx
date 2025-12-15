@@ -254,9 +254,14 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
   useEffect(() => {
     if (!map.current || !isMapLoaded) return;
 
-    // Get spot IDs that have active handshake deals
-    const handshakeSpotIds = new Set(handshakeDeals.filter(d => d.status === 'open').map(d => d.spot_id));
-
+    // Get spot IDs that have ANY active handshake deals (not just 'open')
+    // This ensures parking markers are hidden for all deal states
+    const activeStatuses = ['open', 'pending_approval', 'accepted', 'giver_confirmed', 'receiver_confirmed'];
+    const handshakeSpotIds = new Set(
+      handshakeDeals
+        .filter(d => activeStatuses.includes(d.status))
+        .map(d => d.spot_id)
+    );
     Object.values(markers.current).forEach(marker => marker.remove());
     markers.current = {};
 

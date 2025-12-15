@@ -116,8 +116,11 @@ export const useHandshake = (user: User | null) => {
         description: 'Warte auf einen Interessenten...'
       });
 
-      setMyDeal(data as HandshakeDeal);
-      return data as HandshakeDeal;
+      const newDeal = data as HandshakeDeal;
+      setMyDeal(newDeal);
+      // Immediately add to activeDeals so Map can hide parking marker right away
+      setActiveDeals(prev => [...prev, newDeal]);
+      return newDeal;
     } catch (error) {
       console.error('Error creating handshake offer:', error);
       return null;
