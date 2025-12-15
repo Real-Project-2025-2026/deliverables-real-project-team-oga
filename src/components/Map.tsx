@@ -309,7 +309,7 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
         el.addEventListener('click', (e) => handleInteraction(e, 'clicked'), { passive: false, capture: true });
       }
 
-      const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+      const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
         .setLngLat(spot.coordinates)
         .addTo(map.current);
 
