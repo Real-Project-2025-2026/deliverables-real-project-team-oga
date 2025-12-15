@@ -180,3 +180,18 @@ All colors MUST be HSL.
     opacity: 0.8;
   }
 }
+
+@keyframes floatUp {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  70% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-8px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-16px);
+  }
+}
