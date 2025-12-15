@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 interface CreditAction {
-  action: 'parking_used' | 'complete_handshake' | 'check_balance';
+  action: 'parking_used' | 'complete_handshake' | 'check_balance' | 'new_spot_reported';
   spotId?: string;
   dealId?: string;
 }
@@ -130,7 +130,42 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
 
-      case 'complete_handshake':
+      case 'new_spot_reported':
+        // Award +4 credits for reporting a new parking spot
+        const newSpotBalance = currentBalance + 4;
+        
+        const { error: newSpotError } = await supabase
+          .from('user_credits')
+          .update({ balance: newSpotBalance })
+          .eq('user_id', user.id);
+
+        if (newSpotError) {
+          console.error('Error updating credits for new spot:', newSpotError);
+          return new Response(JSON.stringify({ error: 'Failed to update credits' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        // Record transaction
+        await supabase.from('credit_transactions').insert({
+          user_id: user.id,
+          amount: 4,
+          type: 'parking_used',
+          description: 'Neuer Parkplatz gemeldet - Bonus',
+          related_spot_id: body.spotId
+        });
+
+        console.log('Awarded 4 credits for new spot, new balance:', newSpotBalance);
+        
+        return new Response(JSON.stringify({ 
+          success: true,
+          balance: newSpotBalance,
+          awarded: 4
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+
         if (!body.dealId) {
           return new Response(JSON.stringify({ error: 'Deal ID required' }), {
             status: 400,
@@ -162,7 +197,7 @@ serve(async (req) => {
         }
 
         // Only the giver can complete the deal
-        if (user.id !== deal.giver_id) {
+        if (user!.id !== deal.giver_id) {
           return new Response(JSON.stringify({ error: 'Only the giver can complete the deal' }), {
             status: 403,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
