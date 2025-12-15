@@ -145,30 +145,22 @@ All colors MUST be HSL.
 }
 
 /* Handshake Marker Styles */
-.handshake-marker {
-  position: relative !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 44px !important;
-  height: 52px !important;
-  visibility: visible !important;
-  opacity: 1 !important;
+.handshake-marker-el {
+  position: relative;
 }
 
-.handshake-marker svg {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
+.handshake-marker-el svg {
+  display: block;
 }
 
-.handshake-pulse {
+.handshake-marker-el::before {
+  content: '';
   position: absolute;
-  top: 0;
+  top: 8px;
   left: 50%;
   transform: translateX(-50%);
-  width: 60px;
-  height: 60px;
+  width: 50px;
+  height: 50px;
   background: hsl(38, 92%, 50%, 0.3);
   border-radius: 50%;
   animation: handshake-pulse-animation 2s ease-in-out infinite;
@@ -189,10 +181,4 @@ All colors MUST be HSL.
     transform: translateX(-50%) scale(0.8);
     opacity: 0.8;
   }
-}
-
-/* Ensure mapbox markers are visible */
-.mapboxgl-marker {
-  visibility: visible !important;
-  opacity: 1 !important;
 }
