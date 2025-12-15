@@ -179,6 +179,12 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
           setIsMapLoaded(true);
           setStatus('ready');
           onMapReady?.(map.current!);
+          
+          // Initialize manual pin location on load
+          if (map.current) {
+            const center = map.current.getCenter();
+            onManualPinMove?.([center.lng, center.lat]);
+          }
         });
 
         map.current.on('error', (e) => {
