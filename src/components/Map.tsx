@@ -308,25 +308,6 @@ const Map = ({ onMapReady, parkingSpots, currentLocation, onSpotClick, manualPin
                   stroke="white" stroke-width="2"/>
             <circle cx="12" cy="12" r="4" fill="white"/>
           </svg>
-          ${spot.available ? `
-            <div style="
-              position: absolute;
-              top: -6px;
-              right: -10px;
-              background: ${markerColor};
-              color: white;
-              font-size: 9px;
-              font-weight: bold;
-              padding: 4px 6px;
-              border-radius: 8px;
-              border: 1.5px solid white;
-              min-width: 28px;
-              text-align: center;
-              box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-              font-family: system-ui, sans-serif;
-              cursor: pointer;
-            ">${probability}%</div>
-          ` : ''}
         </div>
       `;
 
