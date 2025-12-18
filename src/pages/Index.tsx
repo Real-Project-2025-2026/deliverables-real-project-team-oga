@@ -148,6 +148,7 @@ const Index = () => {
   const [selectedDealForRequest, setSelectedDealForRequest] =
     useState<HandshakeDeal | null>(null);
   const [isTakingSpot, setIsTakingSpot] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
 
   // Auth state management
   useEffect(() => {
@@ -475,7 +476,8 @@ const Index = () => {
   };
 
   const handleNormalLeave = async () => {
-    if (!userParking || !user) return;
+    if (!userParking || !user || isLeaving) return;
+    setIsLeaving(true);
 
     // Check credits
     if (!credits.canPark) {
@@ -492,65 +494,70 @@ const Index = () => {
     setShowLeavingOptions(false);
 
     // Deduct credits
+    console.time("leave:deductCredits");
     const success = await deductCredits(userParking.spotId);
+    console.timeEnd("leave:deductCredits");
     if (!success) {
       toast({
         title: "Fehler",
         description: "Credits konnten nicht abgezogen werden.",
         variant: "destructive",
       });
+      setIsLeaving(false);
       return;
     }
 
+    // Optimistically clear parking locally after successful credits
+    const prevParking = userParking;
+    setUserParking(null);
+
     // Get spot coordinates for history
-    const spot = parkingSpots.find((s) => s.id === userParking.spotId);
+    const spot = parkingSpots.find((s) => s.id === prevParking.spotId);
     const spotCoords = spot?.coordinates || currentLocation;
 
     // Calculate duration
     const now = new Date();
     const durationMinutes = Math.round(
-      (now.getTime() - userParking.parkingTime.getTime()) / 60000
+      (now.getTime() - prevParking.parkingTime.getTime()) / 60000
     );
 
-    // Save to parking history
-    const { error: historyError } = await supabase
-      .from("parking_history")
-      .insert({
-        user_id: user.id,
-        spot_id: userParking.spotId,
-        latitude: spotCoords[1],
-        longitude: spotCoords[0],
-        started_at: userParking.parkingTime.toISOString(),
-        ended_at: now.toISOString(),
-        duration_minutes: durationMinutes,
-      });
+    // Save history and free spot in parallel
+    console.time("leave:dbParallel");
+    const [{ error: historyError }, { error: updateError }] = await Promise.all(
+      [
+        supabase.from("parking_history").insert({
+          user_id: user.id,
+          spot_id: prevParking.spotId,
+          latitude: spotCoords[1],
+          longitude: spotCoords[0],
+          started_at: prevParking.parkingTime.toISOString(),
+          ended_at: now.toISOString(),
+          duration_minutes: durationMinutes,
+        }),
+        supabase
+          .from("parking_spots")
+          .update({
+            available: true,
+            available_since: new Date().toISOString(),
+          })
+          .eq("id", prevParking.spotId),
+      ]
+    );
+    console.timeEnd("leave:dbParallel");
 
     if (historyError) {
       console.error("Error saving parking history:", historyError);
-      // Continue anyway - history is not critical
     }
-
-    // Update spot in database to be available again
-    const { error } = await supabase
-      .from("parking_spots")
-      .update({
-        available: true,
-        available_since: new Date().toISOString(),
-      })
-      .eq("id", userParking.spotId);
-
-    if (error) {
-      console.error("Error updating spot:", error);
+    if (updateError) {
+      console.error("Error updating spot:", updateError);
       toast({
         title: "Error",
         description: "Could not update parking spot.",
         variant: "destructive",
       });
-      return;
     }
 
-    setUserParking(null);
-    setShowLeavingOptions(false);
+    setIsLeaving(false);
     toast({
       title: t("app.thanksForSharingTitle"),
       description: t("app.thanksForSharingDesc"),
@@ -717,16 +724,30 @@ const Index = () => {
     // Optimistically close selection for faster perceived response
     setSelectedSpot(null);
 
-    // Taking an existing spot - update in database directly
+    // Optimistically set local parking
+    const takenSpotId = selectedSpot.id;
+    const prevParking = userParking;
+    setUserParking({
+      spotId: takenSpotId,
+      parkingTime: now,
+      returnTime: null,
+      durationMinutes: null,
+    });
+
+    // Update in database
+    console.time("take:updateSpot");
     const { error } = await supabase
       .from("parking_spots")
       .update({
         available: false,
         available_since: null,
       })
-      .eq("id", selectedSpot.id);
+      .eq("id", takenSpotId);
+    console.timeEnd("take:updateSpot");
     if (error) {
       console.error("Error updating spot:", error);
+      // rollback local state on failure
+      setUserParking(prevParking || null);
       toast({
         title: t("app.error"),
         description: t("app.errorTakeSpot"),
@@ -734,12 +755,6 @@ const Index = () => {
       });
       return;
     }
-    setUserParking({
-      spotId: selectedSpot.id,
-      parkingTime: now,
-      returnTime: null,
-      durationMinutes: null,
-    });
     toast({
       title: t("app.spotTaken"),
       description: t("app.spotTakenDesc"),
