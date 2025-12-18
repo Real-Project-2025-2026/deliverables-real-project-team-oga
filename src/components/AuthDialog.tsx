@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,15 +33,7 @@ const AuthDialog = ({ open, onOpenChange, onSuccess }: AuthDialogProps) => {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>(
     {}
   );
-  const touchStartRef = useRef<number>(0);
-
-  const handleTouchEnd = (e: React.TouchEvent, callback: () => void) => {
-    const touchDuration = Date.now() - touchStartRef.current;
-    if (touchDuration < 200) {
-      e.preventDefault();
-      callback();
-    }
-  };
+  // Removed custom touch handlers that interfered with click events on iOS
 
   const validateForm = () => {
     try {
@@ -187,10 +179,6 @@ const AuthDialog = ({ open, onOpenChange, onSuccess }: AuthDialogProps) => {
             type="submit"
             className="w-full"
             disabled={isLoading}
-            onTouchStart={() => {
-              touchStartRef.current = Date.now();
-            }}
-            onTouchEnd={(e) => handleTouchEnd(e, () => {})}
             style={{
               touchAction: "manipulation",
               WebkitTapHighlightColor: "transparent",
