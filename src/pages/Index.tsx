@@ -487,6 +487,9 @@ const Index = () => {
       return;
     }
 
+    // Close dialog early to keep UI responsive
+    setShowLeavingOptions(false);
+
     // Deduct credits
     const success = await deductCredits(userParking.spotId);
     if (!success) {
@@ -658,6 +661,11 @@ const Index = () => {
     // Creating a new spot at manual pin location or current location
     const spotLocation = manualPinLocation || currentLocation;
     const newSpotId = `user-${Date.now()}`;
+
+    // Close dialog immediately for perceived speed
+    setShowTimerDialog(false);
+    setManualPinLocation(null);
+
     const { error } = await supabase.from("parking_spots").insert({
       id: newSpotId,
       latitude: spotLocation[1],
@@ -699,14 +707,15 @@ const Index = () => {
       title: t("app.newSpotReported"),
       description: t("app.creditsReceived"),
     });
-    setShowTimerDialog(false);
-    setManualPinLocation(null);
   };
 
   const handleTakeExistingSpot = async () => {
     if (!selectedSpot) return;
 
     const now = new Date();
+    // Optimistically close selection for faster perceived response
+    setSelectedSpot(null);
+
     // Taking an existing spot - update in database directly
     const { error } = await supabase
       .from("parking_spots")
@@ -730,7 +739,6 @@ const Index = () => {
       returnTime: null,
       durationMinutes: null,
     });
-    setSelectedSpot(null);
     toast({
       title: t("app.spotTaken"),
       description: t("app.spotTakenDesc"),
