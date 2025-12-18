@@ -1077,7 +1077,6 @@ const Index = () => {
           </div>
           <Button
             onClick={() => {
-              setShowTimerDialog(false);
               handleConfirmParking();
             }}
             size="lg"

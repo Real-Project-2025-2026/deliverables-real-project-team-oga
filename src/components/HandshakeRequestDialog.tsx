@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Handshake, Clock, Coins } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { useRef } from "react";
 
 interface HandshakeRequestDialogProps {
   deal: HandshakeDeal | null;
@@ -25,16 +24,6 @@ const HandshakeRequestDialog = ({
   onOpenChange,
   onRequest,
 }: HandshakeRequestDialogProps) => {
-  const touchStartRef = useRef<number>(0);
-
-  const handleTouchEnd = (e: React.TouchEvent, callback: () => void) => {
-    const touchDuration = Date.now() - touchStartRef.current;
-    if (touchDuration < 200) {
-      e.preventDefault();
-      callback();
-    }
-  };
-
   if (!deal) return null;
 
   const departureTime = deal.departure_time
@@ -97,10 +86,6 @@ const HandshakeRequestDialog = ({
               variant="outline"
               className="flex-1"
               onClick={() => onOpenChange(false)}
-              onTouchStart={() => {
-                touchStartRef.current = Date.now();
-              }}
-              onTouchEnd={(e) => handleTouchEnd(e, () => onOpenChange(false))}
               style={{
                 touchAction: "manipulation",
                 WebkitTapHighlightColor: "transparent",
@@ -111,10 +96,6 @@ const HandshakeRequestDialog = ({
             <Button
               className="flex-1"
               onClick={onRequest}
-              onTouchStart={() => {
-                touchStartRef.current = Date.now();
-              }}
-              onTouchEnd={(e) => handleTouchEnd(e, onRequest)}
               style={{
                 touchAction: "manipulation",
                 WebkitTapHighlightColor: "transparent",

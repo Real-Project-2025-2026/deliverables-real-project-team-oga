@@ -47,10 +47,6 @@ const LeavingOptionsDialog = ({
           <Button
             variant="outline"
             onClick={onNormalLeave}
-            onTouchStart={() => {
-              touchStartRef.current = Date.now();
-            }}
-            onTouchEnd={(e) => handleTouchEnd(e, onNormalLeave)}
             className="w-full h-auto py-4 flex flex-col items-start gap-2 hover:bg-transparent shadow-sm"
             style={{
               touchAction: "manipulation",
@@ -78,10 +74,6 @@ const LeavingOptionsDialog = ({
           <Button
             className="w-full h-auto py-4 flex flex-col items-start gap-2"
             onClick={onHandshakeOffer}
-            onTouchStart={() => {
-              touchStartRef.current = Date.now();
-            }}
-            onTouchEnd={(e) => handleTouchEnd(e, onHandshakeOffer)}
             style={{
               touchAction: "manipulation",
               WebkitTapHighlightColor: "transparent",

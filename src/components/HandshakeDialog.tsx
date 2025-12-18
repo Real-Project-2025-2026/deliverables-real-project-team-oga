@@ -215,10 +215,10 @@ const HandshakeDialog = ({
                   variant="outline"
                   className="flex-1"
                   onClick={onCancel}
-                  onTouchStart={() => {
-                    touchStartRef.current = Date.now();
-                  }}
-                  onTouchEnd={(e) => handleTouchEnd(e, onCancel)}
+                  // onTouchStart={() => {
+                  //   touchStartRef.current = Date.now();
+                  // }}
+                  // onTouchEnd={(e) => handleTouchEnd(e, onCancel)}
                   style={{
                     touchAction: "manipulation",
                     WebkitTapHighlightColor: "transparent",
@@ -231,10 +231,10 @@ const HandshakeDialog = ({
                   <Button
                     className="flex-1"
                     onClick={onComplete}
-                    onTouchStart={() => {
-                      touchStartRef.current = Date.now();
-                    }}
-                    onTouchEnd={(e) => handleTouchEnd(e, onComplete)}
+                    // onTouchStart={() => {
+                    //   touchStartRef.current = Date.now();
+                    // }}
+                    // onTouchEnd={(e) => handleTouchEnd(e, onComplete)}
                     style={{
                       touchAction: "manipulation",
                       WebkitTapHighlightColor: "transparent",
