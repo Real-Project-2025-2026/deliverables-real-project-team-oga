@@ -147,6 +147,7 @@ const Index = () => {
     useState(false);
   const [selectedDealForRequest, setSelectedDealForRequest] =
     useState<HandshakeDeal | null>(null);
+  const [isTakingSpot, setIsTakingSpot] = useState(false);
 
   // Auth state management
   useEffect(() => {
@@ -751,7 +752,7 @@ const Index = () => {
     }
   };
   const handleTakeSpot = async () => {
-    if (!selectedSpot) return;
+    if (!selectedSpot || isTakingSpot) return;
     // Check if user is authenticated before allowing to take a spot
     if (!user) {
       setPendingAction("take");
@@ -759,7 +760,12 @@ const Index = () => {
       return;
     }
     // Directly take the existing spot without showing timer dialog
-    await handleTakeExistingSpot();
+    setIsTakingSpot(true);
+    try {
+      await handleTakeExistingSpot();
+    } finally {
+      setIsTakingSpot(false);
+    }
   };
   const handleAuthSuccess = () => {
     // Execute pending action after successful auth
@@ -1058,12 +1064,13 @@ const Index = () => {
               onClick={handleTakeSpot}
               size="lg"
               className="w-full"
+              disabled={isTakingSpot}
               style={{
                 touchAction: "manipulation",
                 WebkitTapHighlightColor: "transparent",
               }}
             >
-              {t("app.takeSpot")}
+              {isTakingSpot ? t("app.loading") : t("app.takeSpot")}
             </Button>
           </div>
         </DialogContent>
