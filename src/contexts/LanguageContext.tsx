@@ -100,6 +100,30 @@ const translations = {
     "app.thanksForSharingTitle": "Danke fürs Teilen!",
     "app.thanksForSharingDesc":
       "Dein Platz ist jetzt für andere verfügbar. (+2 Credits)",
+    // Auth
+    "auth.createTitle": "Account erstellen",
+    "auth.signInTitle": "Anmelden",
+    "auth.createDesc":
+      "Melde dich an, um Parkplätze hinzuzufügen und zu teilen.",
+    "auth.signInDesc": "Melde dich an, um fortzufahren.",
+    "auth.email": "E-Mail",
+    "auth.password": "Passwort",
+    "auth.placeholderEmail": "du@beispiel.de",
+    "auth.placeholderPassword": "••••••••",
+    "auth.signUpButton": "Registrieren",
+    "auth.signInButton": "Anmelden",
+    "auth.pleaseWait": "Bitte warten...",
+    "auth.accountExistsTitle": "Account existiert",
+    "auth.accountExistsDesc":
+      "Diese E-Mail ist bereits registriert. Versuche dich stattdessen anzumelden.",
+    "auth.accountCreatedTitle": "Account erstellt!",
+    "auth.accountCreatedDesc":
+      "Du bist jetzt angemeldet und kannst Parkplätze hinzufügen.",
+    "auth.signInFailedTitle": "Anmeldung fehlgeschlagen",
+    "auth.welcomeBackTitle": "Willkommen zurück!",
+    "auth.welcomeBackDesc": "Du bist jetzt angemeldet.",
+    "auth.alreadyHaveAccount": "Du hast bereits ein Konto?",
+    "auth.dontHaveAccount": "Du hast noch kein Konto?",
   },
   en: {
     // Header
@@ -192,6 +216,30 @@ const translations = {
     "app.thanksForSharingTitle": "Thanks for sharing!",
     "app.thanksForSharingDesc":
       "Your spot is now available to others. (+2 credits)",
+    // Auth
+    "auth.createTitle": "Create Account",
+    "auth.signInTitle": "Sign In",
+    "auth.createDesc":
+      "Sign up to add and share parking spots with the community.",
+    "auth.signInDesc": "Sign in to your account to continue.",
+    "auth.email": "Email",
+    "auth.password": "Password",
+    "auth.placeholderEmail": "you@example.com",
+    "auth.placeholderPassword": "••••••••",
+    "auth.signUpButton": "Sign Up",
+    "auth.signInButton": "Sign In",
+    "auth.pleaseWait": "Please wait...",
+    "auth.accountExistsTitle": "Account Exists",
+    "auth.accountExistsDesc":
+      "This email is already registered. Try signing in instead.",
+    "auth.accountCreatedTitle": "Account Created!",
+    "auth.accountCreatedDesc":
+      "You're now signed in and can add parking spots.",
+    "auth.signInFailedTitle": "Sign In Failed",
+    "auth.welcomeBackTitle": "Welcome Back!",
+    "auth.welcomeBackDesc": "You're now signed in.",
+    "auth.alreadyHaveAccount": "Already have an account?",
+    "auth.dontHaveAccount": "Don't have an account?",
   },
 };
 

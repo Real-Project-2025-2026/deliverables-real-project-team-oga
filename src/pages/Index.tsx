@@ -903,7 +903,7 @@ const Index = () => {
                   WebkitTapHighlightColor: "transparent",
                 }}
               >
-                Sign In
+                {t("auth.signInButton")}
               </Button>
             )}
           </div>

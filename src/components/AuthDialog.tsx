@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,6 +27,7 @@ interface AuthDialogProps {
 
 const AuthDialog = ({ open, onOpenChange, onSuccess }: AuthDialogProps) => {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [isSignUp, setIsSignUp] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -139,22 +141,22 @@ const AuthDialog = ({ open, onOpenChange, onSuccess }: AuthDialogProps) => {
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{isSignUp ? "Create Account" : "Sign In"}</DialogTitle>
+          <DialogTitle>
+            {isSignUp ? t("auth.createTitle") : t("auth.signInTitle")}
+          </DialogTitle>
           <DialogDescription>
-            {isSignUp
-              ? "Sign up to add and share parking spots with the community."
-              : "Sign in to your account to continue."}
+            {isSignUp ? t("auth.createDesc") : t("auth.signInDesc")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("auth.email")}</Label>
             <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder={t("auth.placeholderEmail")}
               disabled={isLoading}
             />
             {errors.email && (
@@ -162,13 +164,13 @@ const AuthDialog = ({ open, onOpenChange, onSuccess }: AuthDialogProps) => {
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t("auth.password")}</Label>
             <Input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder={t("auth.placeholderPassword")}
               disabled={isLoading}
             />
             {errors.password && (
@@ -184,30 +186,34 @@ const AuthDialog = ({ open, onOpenChange, onSuccess }: AuthDialogProps) => {
               WebkitTapHighlightColor: "transparent",
             }}
           >
-            {isLoading ? "Please wait..." : isSignUp ? "Sign Up" : "Sign In"}
+            {isLoading
+              ? t("auth.pleaseWait")
+              : isSignUp
+              ? t("auth.signUpButton")
+              : t("auth.signInButton")}
           </Button>
         </form>
         <div className="text-center text-sm text-muted-foreground">
           {isSignUp ? (
             <>
-              Already have an account?{" "}
+              {t("auth.alreadyHaveAccount")}{" "}
               <button
                 type="button"
                 onClick={() => setIsSignUp(false)}
                 className="text-primary hover:underline"
               >
-                Sign in
+                {t("auth.signInButton")}
               </button>
             </>
           ) : (
             <>
-              Don't have an account?{" "}
+              {t("auth.dontHaveAccount")}{" "}
               <button
                 type="button"
                 onClick={() => setIsSignUp(true)}
                 className="text-primary hover:underline"
               >
-                Sign up
+                {t("auth.signUpButton")}
               </button>
             </>
           )}
