@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => ({
     middlewareMode: false,
     // SPA Routing Middleware
     middleware: [
-      (req, res, next) => {
+      (req: any, res: any, next: any) => {
         // Leite alle Routes ohne Dateiendung zu index.html
         if (!req.url.includes(".") && !req.url.includes("node_modules")) {
           req.url = "/index.html";

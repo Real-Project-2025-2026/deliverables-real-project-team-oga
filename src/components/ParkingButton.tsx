@@ -61,7 +61,7 @@ const ParkingButton = ({ onToggle, isParked = false }: ParkingButtonProps) => {
       style={{
         touchAction: "manipulation",
         WebkitTapHighlightColor: "transparent",
-        WebkitTouchCalloutAction: "none",
+        WebkitTouchCallout: "none",
       }}
     >
       <div className="flex items-center justify-center gap-3 py-4 px-6">
