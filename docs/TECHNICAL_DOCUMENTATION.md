@@ -1,11 +1,13 @@
 # OGAP Technical Documentation
 
 ## 1. Project Overview
+
 - **Purpose**: OGAP is a community-driven parking finder that lets drivers hand over on-street parking spots in real time via a credit-based handshake flow and live maps.
 - **Problem**: Reduces time wasted searching for parking by matching leaving drivers with arriving drivers and discouraging freeloading through credits.
 - **Target users**: Urban drivers, campus visitors, and neighborhoods with scarce street parking; mobile users supported via Capacitor shells.
 
 ## 2. Feature Overview
+
 - **Live map with availability (core)**: Displays `parking_spots` with age-based probability coloring and user location; hides spots already in a handshake flow ([src/components/Map.tsx](src/components/Map.tsx)).
 - **Handshake flow (core)**: Offer/request/accept/cancel/complete spot handovers; completion transfers the spot and updates credits ([src/hooks/useHandshake.ts](src/hooks/useHandshake.ts), [supabase/functions/process-credits/index.ts](supabase/functions/process-credits/index.ts)).
 - **Credits economy (core)**: Balance fetch, realtime updates, and credit transactions; deductions/awards handled via Supabase Edge Function ([src/hooks/useCredits.ts](src/hooks/useCredits.ts), [supabase/functions/process-credits/index.ts](supabase/functions/process-credits/index.ts)).
@@ -18,6 +20,7 @@
 - **Mobile shells (optional)**: Capacitor iOS/Android scaffolding (ios/).
 
 ## 3. System Architecture
+
 - **Client**: React (Vite) SPA with React Query for data fetching, React Router for routing, Tailwind + shadcn/ui for UI primitives.
 - **Backend**: Supabase (Postgres, Auth, Realtime, Edge Functions). Tables include `parking_spots`, `handshake_deals`, `user_credits`, `credit_transactions`, `parking_history`, `credit_packages`, `profiles` (see [supabase/migrations](supabase/migrations)).
 - **Realtime**:
@@ -31,6 +34,7 @@
 - **Data flow (simplified)**: User auth → Supabase session → hooks query tables → realtime subscriptions feed UI → user actions (offer/request/complete) hit Edge Functions or table updates → changes fan out via realtime channels to all clients.
 
 ## 4. Tech Stack
+
 - **Languages**: TypeScript (frontend), SQL (Supabase), Deno TypeScript (Edge Functions).
 - **Frameworks/Libraries**: React 18, Vite, React Router, React Query, Tailwind + shadcn/ui (Radix primitives), Mapbox GL JS, date-fns.
 - **Backend services**: Supabase Auth, Postgres, Realtime, Edge Functions.
@@ -38,6 +42,7 @@
 - **Tooling**: ESLint, SWC React plugin, tailwindcss-animate.
 
 ## 5. Project Structure
+
 - [src/pages](src/pages): Routes (`Landing`, `Index`, `Account`, `NotFound`).
 - [src/components](src/components): UI atoms/molecules (map, dialogs, credit display, probability bar, auth, etc.).
 - [src/hooks](src/hooks): Domain hooks (`useCredits`, `useHandshake`, `usePresence`, UI toast).
@@ -49,6 +54,7 @@
 - Root configs: Vite, Tailwind, ESLint, Capacitor, npm scripts in [package.json](package.json).
 
 ## 6. Setup & Installation
+
 - **Prerequisites**: Node.js 20+, npm; Supabase project; Mapbox public token; optional Xcode/Android Studio for mobile builds.
 - **Environment variables**:
   - App: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` in `.env.local`.
@@ -60,6 +66,7 @@
 - **Capacitor sync**: `npm run build && npx cap sync`.
 
 ## 7. Core Logic & Key Modules
+
 - **Map rendering & token flow**: [src/components/Map.tsx](src/components/Map.tsx) fetches Mapbox token via `mapbox-proxy`, falls back to manual input, renders parking and handshake markers, and keeps a manual pin aligned to map center.
 - **Parking session & orchestration**: [src/pages/Index.tsx](src/pages/Index.tsx) handles geolocation, parking session persistence, toast feedback, dialogs for auth/handshake/leaving, and ties map interactions to spot selection and handshake flows.
 - **Credits**: [src/hooks/useCredits.ts](src/hooks/useCredits.ts) fetches balance from `user_credits`, subscribes to realtime changes, and invokes `process-credits` for deductions/refunds/awards.
@@ -70,6 +77,7 @@
 - **Credit processing**: [supabase/functions/process-credits/index.ts](supabase/functions/process-credits/index.ts) authenticates user, ensures a credits record, and handles `check_balance`, `parking_used` (refund 2), `new_spot_reported` (+4), `complete_handshake` (giver +20, receiver -10, close spot, record history).
 
 ## 8. API / Interfaces
+
 - **Supabase tables (selected)**:
   - `parking_spots`: `{id, latitude, longitude, available, available_since}`.
   - `handshake_deals`: `{id, spot_id, giver_id, receiver_id, status, latitude, longitude, departure_time, created_at}`.
@@ -82,6 +90,7 @@
 - **Realtime**: Supabase `channel` subscriptions for changes on `parking_spots`, `handshake_deals`, `user_credits`, plus presence channel for online users.
 
 ## 9. Configuration & Customization
+
 - **Mapbox**: Set `MAPBOX_ACCESS_TOKEN` secret; users can override via in-app token input stored in localStorage.
 - **Credit amounts**: Hardcoded in `process-credits` (+20/-10 handshake, +4 report, +2 refund); adjust in the Edge Function.
 - **Cleanup thresholds**: Day vs night thresholds (30 vs 90 minutes) configured in [supabase/functions/cleanup-parking-spots/index.ts](supabase/functions/cleanup-parking-spots/index.ts).
@@ -89,6 +98,7 @@
 - **Language copy**: Extend translations in [src/contexts/LanguageContext.tsx](src/contexts/LanguageContext.tsx) and component-level text.
 
 ## 10. Known Limitations & Assumptions
+
 - Mapbox token is returned to the client; relies on a public token and local caching.
 - Credit purchase UI is disabled; no payment integration.
 - Geolocation denial falls back to default coordinates; experience degrades without location.
@@ -97,6 +107,7 @@
 - Limited offline support; errors are toast-first with minimal retry/backoff.
 
 ## 11. Future Improvements & Roadmap (inferred)
+
 - Integrate payments for purchasing credit packages.
 - Enhance handshake UX: timers, auto-complete based on departure time, dual confirmation before credit transfer.
 - Secure Mapbox access by proxying tiles/styles and adding rate limiting; avoid exposing token to clients.
