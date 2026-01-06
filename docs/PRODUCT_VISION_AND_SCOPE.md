@@ -17,8 +17,6 @@ The result is wasted time, unnecessary traffic congestion, elevated CO₂ emissi
 
 OGAP addresses this gap by enabling drivers to share real-time, spot-level parking availability as they depart, transforming privately held knowledge into actionable, community-driven data.
 
----
-
 ## 2. Product Vision
 
 OGAP envisions a future where on-street parking is **predictable, transparent, and community-driven**. By enabling drivers to signal their departure in real time and facilitating direct handovers between leaving and arriving drivers, OGAP reduces the uncertainty and inefficiency inherent in traditional parking search behavior.
@@ -33,8 +31,6 @@ The long-term vision is to establish OGAP as the primary tool for urban drivers 
 OGAP does not aim to create new parking infrastructure or replace existing municipal parking management systems. Instead, it optimizes the use of existing on-street parking by closing the information gap between departing and arriving drivers. The product's value proposition is grounded in behavioral change: incentivizing drivers to share departure signals through a credit-based system that rewards contribution and penalizes passive consumption.
 
 The vision extends beyond Munich to other urban areas with similar parking challenges, but success depends on achieving sufficient user density in a defined geographic area to ensure data reliability and network effects.
-
----
 
 ## 3. Target Users & Use Cases
 
@@ -80,8 +76,6 @@ Users depend on OGAP when:
 
 OGAP is less relevant for users with guaranteed parking (residential permits, private lots) or in areas with low parking pressure where spots are easily found.
 
----
-
 ## 4. Value Proposition
 
 OGAP delivers a distinct value proposition by providing **spot-level, real-time parking availability signals** generated directly by departing drivers. This creates three layers of user value:
@@ -108,8 +102,6 @@ OGAP's value scales with user participation. The credit system incentivizes cont
 - **vs. Municipal Parking Guidance Systems**: OGAP focuses on on-street parking with second-by-second updates, not garage occupancy metrics updated every few minutes.
 
 OGAP does not create new parking supply or guarantee availability, but it maximizes the efficiency of existing on-street parking through information sharing.
-
----
 
 ## 5. Product Scope (MVP)
 
@@ -154,8 +146,6 @@ The MVP includes only the core features necessary to validate the product's valu
 - **In-app navigation**: Users must use external navigation apps; OGAP only shows spot locations.
 - **Parking enforcement or validation**: OGAP does not verify whether a user actually parks or leaves; it relies on user honesty and credit incentives.
 
----
-
 ## 6. Out of Scope / Non-Goals
 
 This section explicitly defines what OGAP does **not** aim to solve or provide. These boundaries are critical for managing user expectations and maintaining product focus.
@@ -197,8 +187,6 @@ OGAP's value is entirely dependent on active user contributions. In areas with l
 **Support Multi-City or Global Deployment in MVP**
 
 The initial release is geographically limited to Munich. Expansion to other cities requires separate evaluation of parking regulations, user density, and localization.
-
----
 
 ## 7. Assumptions & Constraints
 
@@ -277,8 +265,6 @@ At this stage, the following are **assumptions** requiring validation through us
 - Parking search time is a documented problem in urban areas (supported by existing research).
 - Geolocation and realtime database technologies are mature and reliable.
 - Mapbox and Supabase provide the necessary technical infrastructure at scale.
-
----
 
 ## 8. Success Criteria
 
