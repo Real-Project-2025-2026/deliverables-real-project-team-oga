@@ -71,11 +71,11 @@ const translations = {
     "app.spotTaken": "Parkplatz übernommen",
     "app.spotTakenDesc": "Du hast den Parkplatz übernommen.",
     "app.newSpotReported": "Neuer Parkplatz gemeldet!",
-    "app.creditsReceived": "+4 Credits erhalten!",
+    "app.creditsReceived": "+2 Credits erhalten!",
     "app.setSpotTitle": "Neuen Parkplatz melden",
     "app.setSpotDesc": "Du meldest einen neuen Parkplatz an dieser Position.",
     "app.setSpotHint":
-      "Du erhältst +4 Credits für das Melden eines neuen Parkplatzes!",
+      "Du erhältst +2 Credits für das Melden eines neuen Parkplatzes!",
     "app.setSpotButton": "Hier parken",
     "app.takeSpot": "Parkplatz nehmen",
     "app.spotsAvailable": "Parkplätze verfügbar",
@@ -98,8 +98,62 @@ const translations = {
     "app.probabilityVeryLow": "Sehr niedrig",
     "app.activeUsers": "Aktive Nutzer",
     "app.thanksForSharingTitle": "Danke fürs Teilen!",
-    "app.thanksForSharingDesc":
-      "Dein Platz ist jetzt für andere verfügbar. (+2 Credits)",
+    "app.thanksForSharingDesc": "Dein Platz ist jetzt für andere verfügbar.",
+    // Header & labels
+    "app.headerTagline": "Freie Parkplätze finden & teilen",
+    "app.backToHomeAria": "Zurück zur Startseite",
+    "app.activeHandshakeAria": "Aktiver Handshake-Deal",
+    "app.recenterAria": "Karte auf meinen Standort zentrieren",
+    // Spot details dialog
+    "app.parkingSpotAvailable": "Parkplatz verfügbar",
+    "app.distanceLabel": "Entfernung:",
+    "app.away": "entfernt",
+    "app.availableFor": "Verfügbar seit:",
+    // Map actions & toasts
+    "app.nearestSpot": "Nächster Parkplatz",
+    "app.foundParkingNearby": "Parkplatz gefunden",
+    "app.noSpotsAvailable": "Keine Parkplätze verfügbar",
+    "app.noSpotsAvailableDesc": "Es sind keine freien Parkplätze in der Nähe.",
+    "app.errorLoadingSpots": "Fehler beim Laden",
+    "app.errorLoadingSpotsDesc":
+      "Parkplätze konnten nicht aus der Datenbank geladen werden.",
+    "app.errorUpdateSpot": "Parkplatz konnte nicht aktualisiert werden.",
+    // Geolocation
+    "app.locationNotSupportedTitle": "Standort nicht unterstützt",
+    "app.locationNotSupportedDesc":
+      "Dein Browser unterstützt keine Geolokalisierung.",
+    "app.locationFoundTitle": "Standort gefunden",
+    "app.locationFoundDesc":
+      "Nutze deinen aktuellen Standort, um Parkplätze zu finden.",
+    "app.locationAccessDeniedTitle": "Standortzugriff verweigert",
+    "app.locationAccessDeniedDesc":
+      "Standardstandort wird verwendet. Standortzugriff aktivieren für bessere Ergebnisse.",
+    // Timer
+    "app.parkingTimeExpiredTitle": "Parkzeit abgelaufen",
+    "app.parkingTimeExpiredDesc":
+      "Deine Parkzeit ist abgelaufen. Bitte bewege dein Fahrzeug.",
+    "app.parkingTimeAlertTitle": "Parkzeit-Hinweis",
+    "app.parkingTimeAlertDesc": "Nur noch 5 Minuten verbleiben!",
+    "app.timeExpired": "Zeit abgelaufen!",
+    "app.minLeft": "Minuten übrig",
+    "app.hoursShort": "Std",
+    "app.minutesShort": "Min",
+    "app.left": "übrig",
+    // Loading
+    "app.loading": "Lädt...",
+    // Handshake completion
+    "app.spotReceivedTitle": "Parkplatz erhalten!",
+    "app.spotReceivedDesc":
+      "Der Handshake ist abgeschlossen. Du hast jetzt den Parkplatz.",
+    // Leaving dialog
+    "leaveDialog.title": "Wie möchtest du gehen?",
+    "leaveDialog.description":
+      "Wähle, ob du einfach gehst oder einen Handshake anbietest.",
+    "leaveDialog.normalLeave": "Einfach gehen",
+    "leaveDialog.handshake": "Handshake anbieten",
+    "leaveDialog.handshakeReward": "+20 Credits bei Übergabe",
+    "leaveDialog.info":
+      "Mit einem Handshake kannst du deinen Parkplatz direkt übergeben und Credits verdienen!",
     // Auth
     "auth.createTitle": "Account erstellen",
     "auth.signInTitle": "Anmelden",
@@ -187,11 +241,11 @@ const translations = {
     "app.spotTaken": "Spot Taken",
     "app.spotTakenDesc": "You have taken this parking spot.",
     "app.newSpotReported": "New Spot Reported!",
-    "app.creditsReceived": "+4 Credits received!",
+    "app.creditsReceived": "+2 Credits received!",
     "app.setSpotTitle": "Report New Parking Spot",
     "app.setSpotDesc": "You are reporting a new parking spot at this location.",
     "app.setSpotHint":
-      "You will receive +4 Credits for reporting a new parking spot!",
+      "You will receive +2 Credits for reporting a new parking spot!",
     "app.setSpotButton": "Park Here",
     "app.takeSpot": "Take This Spot",
     "app.spotsAvailable": "spots available",
@@ -214,8 +268,60 @@ const translations = {
     "app.probabilityVeryLow": "Very Low",
     "app.activeUsers": "Active Users",
     "app.thanksForSharingTitle": "Thanks for sharing!",
-    "app.thanksForSharingDesc":
-      "Your spot is now available to others. (+2 credits)",
+    "app.thanksForSharingDesc": "Your spot is now available to others.",
+    // Header & labels
+    "app.headerTagline": "Find & Share Free Parking",
+    "app.backToHomeAria": "Back to home",
+    "app.activeHandshakeAria": "Active handshake deal",
+    "app.recenterAria": "Recenter map on my location",
+    // Spot details dialog
+    "app.parkingSpotAvailable": "Parking Spot Available",
+    "app.distanceLabel": "Distance:",
+    "app.away": "away",
+    "app.availableFor": "Available for:",
+    // Map actions & toasts
+    "app.nearestSpot": "Nearest Spot",
+    "app.foundParkingNearby": "Found parking",
+    "app.noSpotsAvailable": "No Spots Available",
+    "app.noSpotsAvailableDesc": "There are no available parking spots nearby.",
+    "app.errorLoadingSpots": "Error Loading Spots",
+    "app.errorLoadingSpotsDesc":
+      "Could not load parking spots from the database.",
+    "app.errorUpdateSpot": "Could not update parking spot.",
+    // Geolocation
+    "app.locationNotSupportedTitle": "Location Not Supported",
+    "app.locationNotSupportedDesc": "Your browser doesn't support geolocation.",
+    "app.locationFoundTitle": "Location Found",
+    "app.locationFoundDesc":
+      "Using your current location to find nearby parking.",
+    "app.locationAccessDeniedTitle": "Location Access Denied",
+    "app.locationAccessDeniedDesc":
+      "Using default location. Enable location access for better results.",
+    // Timer
+    "app.parkingTimeExpiredTitle": "Parking Time Expired",
+    "app.parkingTimeExpiredDesc":
+      "Your parking time has expired. Please move your vehicle.",
+    "app.parkingTimeAlertTitle": "Parking Time Alert",
+    "app.parkingTimeAlertDesc": "Only 5 minutes left on your parking!",
+    "app.timeExpired": "Time expired!",
+    "app.minLeft": "min left",
+    "app.hoursShort": "h",
+    "app.minutesShort": "m",
+    "app.left": "left",
+    // Loading
+    "app.loading": "Loading...",
+    // Handshake completion
+    "app.spotReceivedTitle": "Spot received!",
+    "app.spotReceivedDesc": "Handshake completed. You now own the spot.",
+    // Leaving dialog
+    "leaveDialog.title": "How do you want to leave?",
+    "leaveDialog.description":
+      "Choose whether to leave normally or offer a handshake.",
+    "leaveDialog.normalLeave": "Leave without handshake",
+    "leaveDialog.handshake": "Offer handshake",
+    "leaveDialog.handshakeReward": "+20 credits when handed over",
+    "leaveDialog.info":
+      "With a handshake you can hand over your spot directly and earn credits!",
     // Auth
     "auth.createTitle": "Create Account",
     "auth.signInTitle": "Sign In",

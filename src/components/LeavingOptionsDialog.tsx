@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Dialog,
   DialogContent,
@@ -13,16 +14,15 @@ interface LeavingOptionsDialogProps {
   onOpenChange: (open: boolean) => void;
   onNormalLeave: () => void;
   onHandshakeOffer: () => void;
-  hasEnoughCredits: boolean;
 }
 const LeavingOptionsDialog = ({
   open,
   onOpenChange,
   onNormalLeave,
   onHandshakeOffer,
-  hasEnoughCredits,
 }: LeavingOptionsDialogProps) => {
   const touchStartRef = useRef<number>(0);
+  const { t } = useLanguage();
 
   const handleTouchEnd = (e: React.TouchEvent, callback: () => void) => {
     const touchDuration = Date.now() - touchStartRef.current;
@@ -36,10 +36,8 @@ const LeavingOptionsDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Wie möchtest du gehen?</DialogTitle>
-          <DialogDescription>
-            Wähle ob du einfach gehst oder einen Handshake anbietest
-          </DialogDescription>
+          <DialogTitle>{t("leaveDialog.title")}</DialogTitle>
+          <DialogDescription>{t("leaveDialog.description")}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
@@ -56,18 +54,9 @@ const LeavingOptionsDialog = ({
             <div className="flex items-center gap-2 w-full">
               <Navigation className="h-5 w-5 text-muted-foreground" />
               <span className="font-semibold text-foreground">
-                Einfach gehen
+                {t("leaveDialog.normalLeave")}
               </span>
             </div>
-            <div className="flex items-center gap-1 text-xs text-green-600">
-              <Coins className="h-3 w-3" />
-              <span>+2 Credits zurück</span>
-            </div>
-            {!hasEnoughCredits && (
-              <span className="text-xs text-destructive">
-                Nicht genug Credits!
-              </span>
-            )}
           </Button>
 
           {/* Handshake */}
@@ -81,18 +70,19 @@ const LeavingOptionsDialog = ({
           >
             <div className="flex items-center gap-2 w-full">
               <Handshake className="h-5 w-5" />
-              <span className="font-semibold">Handshake anbieten</span>
+              <span className="font-semibold">
+                {t("leaveDialog.handshake")}
+              </span>
             </div>
             <div className="flex items-center gap-1 text-xs text-primary-foreground/80">
               <Coins className="h-3 w-3" />
-              <span>+20 Credits bei Übergabe</span>
+              <span>{t("leaveDialog.handshakeReward")}</span>
             </div>
           </Button>
         </div>
 
         <p className="text-xs text-muted-foreground text-center mt-2">
-          Mit einem Handshake kannst du deinen Parkplatz direkt übergeben und
-          Credits verdienen!
+          {t("leaveDialog.info")}
         </p>
       </DialogContent>
     </Dialog>

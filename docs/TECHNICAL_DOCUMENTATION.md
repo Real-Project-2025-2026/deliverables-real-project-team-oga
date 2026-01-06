@@ -74,7 +74,7 @@
 - **Probability model**: [src/lib/parkingProbability.ts](src/lib/parkingProbability.ts) computes availability probability based on elapsed minutes and peak/off-peak ranges; used for marker coloring and UI bars.
 - **Cleanup**: [supabase/functions/cleanup-parking-spots/index.ts](supabase/functions/cleanup-parking-spots/index.ts) deletes stale `parking_spots` and cancels expired open `handshake_deals`, re-opening spots.
 - **Mapbox proxy**: [supabase/functions/mapbox-proxy/index.ts](supabase/functions/mapbox-proxy/index.ts) serves token and proxies Mapbox requests with CORS headers.
-- **Credit processing**: [supabase/functions/process-credits/index.ts](supabase/functions/process-credits/index.ts) authenticates user, ensures a credits record, and handles `check_balance`, `parking_used` (refund 2), `new_spot_reported` (+4), `complete_handshake` (giver +20, receiver -10, close spot, record history).
+- **Credit processing**: [supabase/functions/process-credits/index.ts](supabase/functions/process-credits/index.ts) authenticates user, ensures a credits record, and handles `check_balance`, `parking_used`, `new_spot_reported` (+2), `complete_handshake` (giver +20, receiver -10, close spot, record history).
 
 ## 8. API / Interfaces
 
@@ -92,7 +92,7 @@
 ## 9. Configuration & Customization
 
 - **Mapbox**: Set `MAPBOX_ACCESS_TOKEN` secret; users can override via in-app token input stored in localStorage.
-- **Credit amounts**: Hardcoded in `process-credits` (+20/-10 handshake, +4 report, +2 refund); adjust in the Edge Function.
+- **Credit amounts**: Hardcoded in `process-credits` (+20/-10 handshake, +2 report); adjust in the Edge Function.
 - **Cleanup thresholds**: Day vs night thresholds (30 vs 90 minutes) configured in [supabase/functions/cleanup-parking-spots/index.ts](supabase/functions/cleanup-parking-spots/index.ts).
 - **UI theme**: Tailwind and shadcn; adjust globals in [src/App.css](src/App.css) and [src/index.css](src/index.css).
 - **Language copy**: Extend translations in [src/contexts/LanguageContext.tsx](src/contexts/LanguageContext.tsx) and component-level text.

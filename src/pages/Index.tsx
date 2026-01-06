@@ -196,9 +196,8 @@ const Index = () => {
               durationMinutes: defaultDuration,
             });
             toast({
-              title: "Parkplatz erhalten!",
-              description:
-                "Der Handshake ist abgeschlossen. Du hast jetzt den Parkplatz.",
+              title: t("app.spotReceivedTitle"),
+              description: t("app.spotReceivedDesc"),
             });
           }
         }
@@ -219,8 +218,8 @@ const Index = () => {
       if (error) {
         console.error("Error fetching parking spots:", error);
         toast({
-          title: "Error Loading Spots",
-          description: "Could not load parking spots from the database.",
+          title: t("app.errorLoadingSpots"),
+          description: t("app.errorLoadingSpotsDesc"),
           variant: "destructive",
         });
       } else if (data) {
@@ -303,8 +302,8 @@ const Index = () => {
   useEffect(() => {
     if (!("geolocation" in navigator)) {
       toast({
-        title: "Location Not Supported",
-        description: "Your browser doesn't support geolocation.",
+        title: t("app.locationNotSupportedTitle"),
+        description: t("app.locationNotSupportedDesc"),
         variant: "destructive",
       });
       return;
@@ -323,8 +322,8 @@ const Index = () => {
         });
       }
       toast({
-        title: "Location Found",
-        description: "Using your current location to find nearby parking.",
+        title: t("app.locationFoundTitle"),
+        description: t("app.locationFoundDesc"),
       });
     };
 
@@ -338,9 +337,8 @@ const Index = () => {
       // Only show error for permission denied (code 1)
       if (error.code === 1) {
         toast({
-          title: "Location Access Denied",
-          description:
-            "Using default location. Enable location access for better results.",
+          title: t("app.locationAccessDeniedTitle"),
+          description: t("app.locationAccessDeniedDesc"),
           variant: "destructive",
         });
       }
@@ -409,13 +407,15 @@ const Index = () => {
       });
       setSelectedSpot(nearestSpot);
       toast({
-        title: "Nearest Spot",
-        description: `Found parking ${getDistanceToSpot(nearestSpot)} away`,
+        title: t("app.nearestSpot"),
+        description: `${t("app.foundParkingNearby")} ${getDistanceToSpot(
+          nearestSpot
+        )} ${t("app.away")}`,
       });
     } else if (!nearestSpot) {
       toast({
-        title: "No Spots Available",
-        description: "There are no available parking spots nearby.",
+        title: t("app.noSpotsAvailable"),
+        description: t("app.noSpotsAvailableDesc"),
         variant: "destructive",
       });
     }
@@ -431,27 +431,30 @@ const Index = () => {
       const now = new Date();
       const minutesLeft = differenceInMinutes(userParking.returnTime!, now);
       if (minutesLeft <= 0) {
-        setTimeRemaining("Time expired!");
+        setTimeRemaining(t("app.timeExpired"));
         toast({
-          title: "Parking Time Expired",
-          description:
-            "Your parking time has expired. Please move your vehicle.",
+          title: t("app.parkingTimeExpiredTitle"),
+          description: t("app.parkingTimeExpiredDesc"),
           variant: "destructive",
         });
       } else if (minutesLeft <= 5 && minutesLeft > 0) {
-        setTimeRemaining(`${minutesLeft} min left`);
+        setTimeRemaining(`${minutesLeft} ${t("app.minLeft")}`);
         if (minutesLeft === 5) {
           toast({
-            title: "Parking Time Alert",
-            description: "Only 5 minutes left on your parking!",
+            title: t("app.parkingTimeAlertTitle"),
+            description: t("app.parkingTimeAlertDesc"),
           });
         }
       } else if (minutesLeft < 60) {
-        setTimeRemaining(`${minutesLeft} min left`);
+        setTimeRemaining(`${minutesLeft} ${t("app.minLeft")}`);
       } else {
         const hours = Math.floor(minutesLeft / 60);
         const mins = minutesLeft % 60;
-        setTimeRemaining(`${hours}h ${mins}m left`);
+        setTimeRemaining(
+          `${hours}${t("app.hoursShort")} ${mins}${t("app.minutesShort")} ${t(
+            "app.left"
+          )}`
+        );
       }
     };
     updateTimer();
@@ -479,35 +482,10 @@ const Index = () => {
     if (!userParking || !user || isLeaving) return;
     setIsLeaving(true);
 
-    // Check credits
-    if (!credits.canPark) {
-      toast({
-        title: "Nicht genug Credits",
-        description: "Du benötigst mindestens 2 Credits zum Parken.",
-        variant: "destructive",
-      });
-      setShowLeavingOptions(false);
-      return;
-    }
-
     // Close dialog early to keep UI responsive
     setShowLeavingOptions(false);
 
-    // Deduct credits
-    console.time("leave:deductCredits");
-    const success = await deductCredits(userParking.spotId);
-    console.timeEnd("leave:deductCredits");
-    if (!success) {
-      toast({
-        title: "Fehler",
-        description: "Credits konnten nicht abgezogen werden.",
-        variant: "destructive",
-      });
-      setIsLeaving(false);
-      return;
-    }
-
-    // Optimistically clear parking locally after successful credits
+    // Clear parking locally
     const prevParking = userParking;
     setUserParking(null);
 
@@ -551,8 +529,8 @@ const Index = () => {
     if (updateError) {
       console.error("Error updating spot:", updateError);
       toast({
-        title: "Error",
-        description: "Could not update parking spot.",
+        title: t("app.error"),
+        description: t("app.errorUpdateSpot"),
         variant: "destructive",
       });
     }
@@ -691,7 +669,7 @@ const Index = () => {
       return;
     }
 
-    // Award +4 credits for reporting a new spot
+    // Award +2 credits for reporting a new spot
     try {
       const response = await supabase.functions.invoke("process-credits", {
         body: { action: "new_spot_reported", spotId: newSpotId },
@@ -849,7 +827,7 @@ const Index = () => {
                 variant="ghost"
                 size="icon"
                 className="touch-target"
-                aria-label="Back to home"
+                aria-label={t("app.backToHomeAria")}
                 style={{
                   touchAction: "manipulation",
                   WebkitTapHighlightColor: "transparent",
@@ -863,7 +841,7 @@ const Index = () => {
                 OGAP
               </h1>
               <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                Find & Share Free Parking
+                {t("app.headerTagline")}
               </p>
             </div>
           </div>
@@ -875,7 +853,7 @@ const Index = () => {
                 size="icon"
                 onClick={() => setShowHandshakeDialog(true)}
                 className="touch-target relative"
-                aria-label="Active handshake deal"
+                aria-label={t("app.activeHandshakeAria")}
                 style={{
                   touchAction: "manipulation",
                   WebkitTapHighlightColor: "transparent",
@@ -960,7 +938,7 @@ const Index = () => {
           size="icon"
           variant="outline"
           className="group h-12 w-12 rounded-full shadow-lg bg-card hover:bg-primary active:scale-95 touch-target"
-          aria-label="Recenter map on my location"
+          aria-label={t("app.recenterAria")}
           style={{
             touchAction: "manipulation",
             WebkitTapHighlightColor: "transparent",
@@ -977,15 +955,19 @@ const Index = () => {
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Parking Spot Available</DialogTitle>
+            <DialogTitle>{t("app.parkingSpotAvailable")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-2 text-sm text-muted-foreground">
             <div>
-              <strong className="text-foreground">Distance:</strong>{" "}
-              {selectedSpot && getDistanceToSpot(selectedSpot)} away
+              <strong className="text-foreground">
+                {t("app.distanceLabel")}
+              </strong>{" "}
+              {selectedSpot && getDistanceToSpot(selectedSpot)} {t("app.away")}
             </div>
             <div>
-              <strong className="text-foreground">Available for:</strong>{" "}
+              <strong className="text-foreground">
+                {t("app.availableFor")}
+              </strong>{" "}
               {selectedSpot?.availableSince &&
                 formatDistanceToNow(selectedSpot.availableSince)}
             </div>
@@ -1021,7 +1003,7 @@ const Index = () => {
                       }}
                     >
                       <Navigation className="h-4 w-4" />
-                      Navigate with Apple Maps
+                      {t("app.openInAppleMaps")}
                     </Button>
                     <Button
                       onClick={() =>
@@ -1036,7 +1018,7 @@ const Index = () => {
                       }}
                     >
                       <MapPin className="h-4 w-4" />
-                      Open in Google Maps
+                      {t("app.openInGoogleMaps")}
                     </Button>
                   </>
                 ) : (
@@ -1207,7 +1189,6 @@ const Index = () => {
         onOpenChange={setShowLeavingOptions}
         onNormalLeave={handleNormalLeave}
         onHandshakeOffer={handleHandshakeOffer}
-        hasEnoughCredits={credits.canPark}
       />
 
       {/* Handshake Dialog */}

@@ -2,41 +2,53 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
 interface CreditAction {
-  action: 'parking_used' | 'complete_handshake' | 'check_balance' | 'new_spot_reported';
+  action:
+    | "parking_used"
+    | "complete_handshake"
+    | "check_balance"
+    | "new_spot_reported";
   spotId?: string;
   dealId?: string;
 }
 
 serve(async (req) => {
   // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
     // Get user from JWT
-    const authHeader = req.headers.get('Authorization')!;
-    const token = authHeader.replace('Bearer ', '');
-    
+    const authHeader = req.headers.get("Authorization")!;
+    const token = authHeader.replace("Bearer ", "");
+
     // Create client with user's token for auth
-    const supabaseUser = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
-      global: { headers: { Authorization: authHeader } }
-    });
-    
-    const { data: { user }, error: userError } = await supabaseUser.auth.getUser(token);
+    const supabaseUser = createClient(
+      supabaseUrl,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      {
+        global: { headers: { Authorization: authHeader } },
+      }
+    );
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseUser.auth.getUser(token);
     if (userError || !user) {
-      console.error('Auth error:', userError);
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      console.error("Auth error:", userError);
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -44,263 +56,300 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const body: CreditAction = await req.json();
-    console.log('Processing credit action:', body, 'for user:', user.id);
+    console.log("Processing credit action:", body, "for user:", user.id);
 
     // Get user's current credit balance
     const { data: credits, error: creditsError } = await supabase
-      .from('user_credits')
-      .select('*')
-      .eq('user_id', user.id)
+      .from("user_credits")
+      .select("*")
+      .eq("user_id", user.id)
       .maybeSingle();
 
     if (creditsError) {
-      console.error('Error fetching credits:', creditsError);
-      return new Response(JSON.stringify({ error: 'Failed to fetch credits' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      console.error("Error fetching credits:", creditsError);
+      return new Response(
+        JSON.stringify({ error: "Failed to fetch credits" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     // If user has no credits record, create one with welcome bonus
     let currentBalance = credits?.balance ?? 0;
     if (!credits) {
-      console.log('Creating credits record for user:', user.id);
+      console.log("Creating credits record for user:", user.id);
       const { error: insertError } = await supabase
-        .from('user_credits')
+        .from("user_credits")
         .insert({ user_id: user.id, balance: 20 });
-      
+
       if (insertError) {
-        console.error('Error creating credits:', insertError);
+        console.error("Error creating credits:", insertError);
       } else {
         currentBalance = 20;
         // Record welcome bonus
-        await supabase.from('credit_transactions').insert({
+        await supabase.from("credit_transactions").insert({
           user_id: user.id,
           amount: 20,
-          type: 'welcome_bonus',
-          description: 'Willkommens-Credits'
+          type: "welcome_bonus",
+          description: "Willkommens-Credits",
         });
       }
     }
 
     // Handle different actions
     switch (body.action) {
-      case 'check_balance':
-        return new Response(JSON.stringify({ 
-          balance: currentBalance,
-          canPark: currentBalance >= 2
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+      case "check_balance":
+        return new Response(
+          JSON.stringify({
+            balance: currentBalance,
+            canPark: currentBalance >= 2,
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
 
-      case 'parking_used':
-        // Refund 2 credits when leaving normally (user gets back what they paid when parking)
-        const refundBalance = currentBalance + 2;
-        
-        // Update balance
-        const { error: updateError } = await supabase
-          .from('user_credits')
-          .update({ balance: refundBalance })
-          .eq('user_id', user.id);
+      // case "parking_used": { // Refund 2 credits when leaving normally (user gets back what they paid when parking)
+      //   const refundBalance = currentBalance + 2;
 
-        if (updateError) {
-          console.error('Error updating credits:', updateError);
-          return new Response(JSON.stringify({ error: 'Failed to update credits' }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
+      //   // Update balance
+      //   const { error: updateError } = await supabase
+      //     .from("user_credits")
+      //     .update({ balance: refundBalance })
+      //     .eq("user_id", user.id);
 
-        // Record transaction
-        await supabase.from('credit_transactions').insert({
-          user_id: user.id,
-          amount: 2,
-          type: 'parking_used',
-          description: 'Parken beendet - Credits zurück',
-          related_spot_id: body.spotId
-        });
+      //   if (updateError) {
+      //     console.error("Error updating credits:", updateError);
+      //     return new Response(
+      //       JSON.stringify({ error: "Failed to update credits" }),
+      //       {
+      //         status: 500,
+      //         headers: { ...corsHeaders, "Content-Type": "application/json" },
+      //       }
+      //     );
+      //   }
 
-        console.log('Refunded 2 credits, new balance:', refundBalance);
-        
-        return new Response(JSON.stringify({ 
-          success: true,
-          balance: refundBalance,
-          refunded: 2
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+      //   // Record transaction
+      //   await supabase.from("credit_transactions").insert({
+      //     user_id: user.id,
+      //     amount: 2,
+      //     type: "parking_used",
+      //     description: "Parken beendet - Credits zurück",
+      //     related_spot_id: body.spotId,
+      //   });
 
-      case 'new_spot_reported':
-        // Award +4 credits for reporting a new parking spot
-        const newSpotBalance = currentBalance + 4;
-        
+      //   console.log("Refunded 2 credits, new balance:", refundBalance);
+
+      //   return new Response(
+      //     JSON.stringify({
+      //       success: true,
+      //       balance: refundBalance,
+      //       refunded: 2,
+      //     }),
+      //     {
+      //       headers: { ...corsHeaders, "Content-Type": "application/json" },
+      //     }
+      //   );
+      // }
+
+      case "new_spot_reported": {
+        // Award +2 credits for reporting a new parking spot
+        const newSpotBalance = currentBalance + 2;
+
         const { error: newSpotError } = await supabase
-          .from('user_credits')
+          .from("user_credits")
           .update({ balance: newSpotBalance })
-          .eq('user_id', user.id);
+          .eq("user_id", user.id);
 
         if (newSpotError) {
-          console.error('Error updating credits for new spot:', newSpotError);
-          return new Response(JSON.stringify({ error: 'Failed to update credits' }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
+          console.error("Error updating credits for new spot:", newSpotError);
+          return new Response(
+            JSON.stringify({ error: "Failed to update credits" }),
+            {
+              status: 500,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
         }
 
         // Record transaction
-        await supabase.from('credit_transactions').insert({
+        await supabase.from("credit_transactions").insert({
           user_id: user.id,
-          amount: 4,
-          type: 'parking_used',
-          description: 'Neuer Parkplatz gemeldet - Bonus',
-          related_spot_id: body.spotId
+          amount: 2,
+          type: "parking_used",
+          description: "Neuer Parkplatz gemeldet - Bonus",
+          related_spot_id: body.spotId,
         });
 
-        console.log('Awarded 4 credits for new spot, new balance:', newSpotBalance);
-        
-        return new Response(JSON.stringify({ 
-          success: true,
-          balance: newSpotBalance,
-          awarded: 4
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        console.log(
+          "Awarded 2 credits for new spot, new balance:",
+          newSpotBalance
+        );
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            balance: newSpotBalance,
+            awarded: 2,
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
 
         if (!body.dealId) {
-          return new Response(JSON.stringify({ error: 'Deal ID required' }), {
+          return new Response(JSON.stringify({ error: "Deal ID required" }), {
             status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
 
         // Get the deal
         const { data: deal, error: dealError } = await supabase
-          .from('handshake_deals')
-          .select('*')
-          .eq('id', body.dealId)
+          .from("handshake_deals")
+          .select("*")
+          .eq("id", body.dealId)
           .single();
 
         if (dealError || !deal) {
-          console.error('Deal not found:', dealError);
-          return new Response(JSON.stringify({ error: 'Deal not found' }), {
+          console.error("Deal not found:", dealError);
+          return new Response(JSON.stringify({ error: "Deal not found" }), {
             status: 404,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
 
         // Check if deal is in accepted status (new flow)
-        if (deal.status !== 'accepted') {
-          return new Response(JSON.stringify({ error: 'Deal not ready for completion. Status: ' + deal.status }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
+        if (deal.status !== "accepted") {
+          return new Response(
+            JSON.stringify({
+              error: "Deal not ready for completion. Status: " + deal.status,
+            }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
         }
 
         // Only the giver can complete the deal
         if (user!.id !== deal.giver_id) {
-          return new Response(JSON.stringify({ error: 'Only the giver can complete the deal' }), {
-            status: 403,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
+          return new Response(
+            JSON.stringify({ error: "Only the giver can complete the deal" }),
+            {
+              status: 403,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
         }
 
         // Complete the deal - distribute credits
-        console.log('Completing handshake deal, distributing credits');
-        
+        console.log("Completing handshake deal, distributing credits");
+
         // Give giver +20 credits
         const { data: giverCredits } = await supabase
-          .from('user_credits')
-          .select('balance')
-          .eq('user_id', deal.giver_id)
+          .from("user_credits")
+          .select("balance")
+          .eq("user_id", deal.giver_id)
           .single();
-        
-        await supabase
-          .from('user_credits')
-          .update({ balance: (giverCredits?.balance ?? 0) + 20 })
-          .eq('user_id', deal.giver_id);
 
-        await supabase.from('credit_transactions').insert({
+        await supabase
+          .from("user_credits")
+          .update({ balance: (giverCredits?.balance ?? 0) + 20 })
+          .eq("user_id", deal.giver_id);
+
+        await supabase.from("credit_transactions").insert({
           user_id: deal.giver_id,
           amount: 20,
-          type: 'handshake_giver',
-          description: 'Handshake - Parkplatz übergeben',
+          type: "handshake_giver",
+          description: "Handshake - Parkplatz übergeben",
           related_spot_id: deal.spot_id,
-          related_user_id: deal.receiver_id
+          related_user_id: deal.receiver_id,
         });
 
         // Receiver pays 10 credits for the handshake spot
         const { data: receiverCredits } = await supabase
-          .from('user_credits')
-          .select('balance')
-          .eq('user_id', deal.receiver_id)
+          .from("user_credits")
+          .select("balance")
+          .eq("user_id", deal.receiver_id)
           .single();
 
         await supabase
-          .from('user_credits')
+          .from("user_credits")
           .update({ balance: (receiverCredits?.balance ?? 0) - 10 })
-          .eq('user_id', deal.receiver_id);
+          .eq("user_id", deal.receiver_id);
 
-        await supabase.from('credit_transactions').insert({
+        await supabase.from("credit_transactions").insert({
           user_id: deal.receiver_id,
           amount: -10,
-          type: 'handshake_receiver',
-          description: 'Handshake - Parkplatz erhalten',
+          type: "handshake_receiver",
+          description: "Handshake - Parkplatz erhalten",
           related_spot_id: deal.spot_id,
-          related_user_id: deal.giver_id
+          related_user_id: deal.giver_id,
         });
 
         // Update deal status to completed
         await supabase
-          .from('handshake_deals')
-          .update({ status: 'completed' })
-          .eq('id', body.dealId);
+          .from("handshake_deals")
+          .update({ status: "completed" })
+          .eq("id", body.dealId);
 
         // Save parking history for the giver
         const now = new Date();
-        await supabase.from('parking_history').insert({
+        await supabase.from("parking_history").insert({
           user_id: deal.giver_id,
           spot_id: deal.spot_id,
           latitude: deal.latitude,
           longitude: deal.longitude,
           started_at: deal.created_at, // Use deal creation as approximate parking start
           ended_at: now.toISOString(),
-          duration_minutes: Math.round((now.getTime() - new Date(deal.created_at).getTime()) / 60000)
+          duration_minutes: Math.round(
+            (now.getTime() - new Date(deal.created_at).getTime()) / 60000
+          ),
         });
 
         // Transfer the parking spot to the receiver (mark as unavailable, receiver now owns it)
         await supabase
-          .from('parking_spots')
+          .from("parking_spots")
           .update({
             available: false,
-            available_since: null
+            available_since: null,
           })
-          .eq('id', deal.spot_id);
+          .eq("id", deal.spot_id);
 
-        console.log('Handshake completed successfully, parking history saved for giver');
+        console.log(
+          "Handshake completed successfully, parking history saved for giver"
+        );
 
-        return new Response(JSON.stringify({ 
-          success: true,
-          status: 'completed',
-          completed: true,
-          spotId: deal.spot_id,
-          receiverId: deal.receiver_id,
-          giverId: deal.giver_id
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        return new Response(
+          JSON.stringify({
+            success: true,
+            status: "completed",
+            completed: true,
+            spotId: deal.spot_id,
+            receiverId: deal.receiver_id,
+            giverId: deal.giver_id,
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
 
       default:
-        return new Response(JSON.stringify({ error: 'Invalid action' }), {
+        return new Response(JSON.stringify({ error: "Invalid action" }), {
           status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
     }
   } catch (error: unknown) {
-    console.error('Error processing credits:', error);
-    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error("Error processing credits:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
