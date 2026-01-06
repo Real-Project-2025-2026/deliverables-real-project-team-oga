@@ -198,7 +198,9 @@ serve(async (req) => {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           }
         );
+      }
 
+      case "complete_handshake": {
         if (!body.dealId) {
           return new Response(JSON.stringify({ error: "Deal ID required" }), {
             status: 400,
