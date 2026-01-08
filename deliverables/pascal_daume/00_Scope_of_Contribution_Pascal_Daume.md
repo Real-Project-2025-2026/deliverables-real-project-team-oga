@@ -1,3 +1,3 @@
 # OGAP – Scope of Contribution
 
-tbd.
+My primary contributions were focused on the preparation, execution, and subsequent analysis of an expert interview to support the validation of the underlying problem assumptions, as well as the creation of a flowchart to visualize selected process steps and interaction sequences within the proposed solution. Beyond these tasks, I contributed by supporting during the conceptual and development phases

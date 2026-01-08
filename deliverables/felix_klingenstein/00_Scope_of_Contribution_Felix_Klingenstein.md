@@ -1,4 +1,5 @@
-# OGAP – Scope of Contribution (Felix Klingenstein)
+# OGAP – Scope of Contribution
+Felix Klingenstein - 35132522
 
 This part of the project focuses on the product conception and technical realization of OGAP.
 
