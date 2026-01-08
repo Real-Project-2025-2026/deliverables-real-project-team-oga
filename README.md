@@ -2,6 +2,16 @@
 
 OGAP is a React/TypeScript web app that helps drivers find and hand over parking spots in real time. It combines live location, Mapbox maps, Supabase realtime tables, and a credit-based handshake flow so users can share spots fairly. The project targets a university submission, so this README emphasizes setup, architecture, and evaluation notes.
 
+## Group Members – Team OGA
+
+| Name               | Faculty | Student ID |
+| ------------------ | ------- | ---------- |
+| Moritz Höltl       | FK07    | 25873422   |
+| Felix Klingenstein | FK07    | 35132522   |
+| Luca Martini       | FK07    | 02358622   |
+| Tim Weidenberg     | FK10    | 63578422   |
+| Pascal Daume       | FK07    | 02992822   |
+
 ## Table of Contents
 
 - Overview
